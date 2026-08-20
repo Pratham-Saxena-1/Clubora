@@ -10,7 +10,6 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react';
-import './HostSidebar.css';
 
 const navItems = [
   { to: '/host/dashboard', icon: LayoutDashboard, label: 'Dashboard' },

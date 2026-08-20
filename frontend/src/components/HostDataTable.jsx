@@ -1,5 +1,4 @@
 import { Inbox } from 'lucide-react';
-import './HostDataTable.css';
 
 function HostDataTable({ columns, data, emptyMessage, renderRow }) {
   return (

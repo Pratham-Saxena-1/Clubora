@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 import HostLayout from './layouts/HostLayout';
 import LandingPage from './pages/LandingPage';
 import HostDashboard from './pages/HostDashboard';
@@ -14,23 +15,25 @@ import HostSettings from './pages/HostSettings';
 function App() {
   return (
     <ThemeProvider>
-      <HashRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/host" element={<HostLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<HostDashboard />} />
-            <Route path="club-profile" element={<HostClubProfile />} />
-            <Route path="recruitment" element={<HostRecruitment />} />
-            <Route path="applicants" element={<HostApplicants />} />
-            <Route path="registrations" element={<HostRegistrations />} />
-            <Route path="tickets-certs" element={<HostTicketsCerts />} />
-            <Route path="support" element={<HostSupport />} />
-            <Route path="settings" element={<HostSettings />} />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </HashRouter>
+      <ToastProvider>
+        <HashRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/host" element={<HostLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<HostDashboard />} />
+              <Route path="club-profile" element={<HostClubProfile />} />
+              <Route path="recruitment" element={<HostRecruitment />} />
+              <Route path="applicants" element={<HostApplicants />} />
+              <Route path="registrations" element={<HostRegistrations />} />
+              <Route path="tickets-certs" element={<HostTicketsCerts />} />
+              <Route path="support" element={<HostSupport />} />
+              <Route path="settings" element={<HostSettings />} />
+            </Route>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </HashRouter>
+      </ToastProvider>
     </ThemeProvider>
   );
 }

@@ -1,18 +1,23 @@
 import { useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
+import { FileText, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
 import HostPagination from '../components/HostPagination';
-import { registrationsData } from '../data/mockData';
-import './HostRegistrations.css';
+import { useToast } from '../context/ToastContext';
+import { registrationsData as initialRegs } from '../data/mockData';
 
 function HostRegistrations() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [registrations, setRegistrations] = useState(initialRegs);
+  const { addToast } = useToast();
   const pageSize = 10;
 
-  const filtered = registrationsData.filter(
+  const filtered = registrations.filter(
     (r) =>
       r.participant.name.toLowerCase().includes(search.toLowerCase()) ||
       r.eventName.toLowerCase().includes(search.toLowerCase()) ||
@@ -22,7 +27,35 @@ function HostRegistrations() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const columns = ['Participant', 'Event Name', 'Registration Date', 'Actions'];
+  const exportToExcel = () => {
+    const exportData = registrations.map(r => ({
+      'Participant Name': r.participant.name,
+      'Email': r.participant.email,
+      'Reg Number': r.participant.regNumber,
+      'Event Name': r.eventName,
+      'Registration Date': r.registrationDate,
+      'Registration Time': r.registrationTime
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
+    XLSX.writeFile(workbook, "clubora_registrations.xlsx");
+    addToast('Excel file downloaded', 'success');
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Clubora Registrations Report", 14, 15);
+    const tableColumn = ["Participant", "Reg Number", "Event", "Date", "Time"];
+    const tableRows = registrations.map(r => [
+      r.participant.name, r.participant.regNumber, r.eventName, r.registrationDate, r.registrationTime
+    ]);
+    doc.autoTable({ head: [tableColumn], body: tableRows, startY: 20 });
+    doc.save("clubora_registrations.pdf");
+    addToast('PDF report downloaded', 'success');
+  };
+
+  const columns = ['Participant', 'Event Name', 'Registration Date'];
 
   const renderRow = (reg) => (
     <tr key={reg.id}>
@@ -40,31 +73,32 @@ function HostRegistrations() {
       <td className="host-registrations__date">
         {reg.registrationDate} · {reg.registrationTime}
       </td>
-      <td>
-        <button
-          className={`host-registrations__verify-btn ${reg.paymentVerified ? 'host-registrations__verify-btn--verified' : ''}`}
-          disabled={reg.paymentVerified}
-        >
-          <ShieldCheck size={14} strokeWidth={2} />
-          <span>{reg.paymentVerified ? 'Verified' : 'Verify Payment'}</span>
-        </button>
-      </td>
     </tr>
   );
 
   return (
     <div className="host-registrations">
       <HostPageHeader
-        title="Registration & Payment Ledger"
-        subtitle="Search, track, and verify student registrations and transaction records."
+        title="Registration Ledger"
+        subtitle="Search, track, and export student registrations and transaction records."
       />
 
-      <HostSearchBar
-        placeholder="Search registrations, events, or students…"
-        value={search}
-        onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-        id="registrations-search"
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
+        <HostSearchBar
+          placeholder="Search registrations, events, or students…"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+          id="registrations-search"
+        />
+        <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+          <button onClick={exportToPDF} className="host-modal__btn host-modal__btn--secondary" style={{ padding: '8px 16px' }}>
+            <FileText size={16} /> PDF
+          </button>
+          <button onClick={exportToExcel} className="host-modal__btn host-modal__btn--secondary" style={{ padding: '8px 16px' }}>
+            <Download size={16} /> Excel
+          </button>
+        </div>
+      </div>
 
       <HostDataTable
         columns={columns}
