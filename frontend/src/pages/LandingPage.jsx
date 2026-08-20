@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, BarChart3, Shield, ArrowRight } from 'lucide-react';
-import './LandingPage.css';
 
 const features = [
   {

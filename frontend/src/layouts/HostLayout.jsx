@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import HostSidebar from '../components/HostSidebar';
 import HostTopBar from '../components/HostTopBar';
-import './HostLayout.css';
 
 function HostLayout() {
   return (

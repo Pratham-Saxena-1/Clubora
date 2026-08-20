@@ -1,4 +1,3 @@
-import './HostStatCard.css';
 
 function HostStatCard({ icon: Icon, value, label, colorClass }) {
   return (

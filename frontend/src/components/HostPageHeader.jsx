@@ -1,4 +1,3 @@
-import './HostPageHeader.css';
 
 function HostPageHeader({ title, subtitle, action }) {
   return (

@@ -1,127 +1,91 @@
 import { useState } from 'react';
 import { Upload, Save } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
-import { clubInfo } from '../data/mockData';
-import './HostSettings.css';
+import { useToast } from '../context/ToastContext';
+import { currentUser } from '../data/mockData';
 
 function HostSettings() {
-  const [form, setForm] = useState({
-    fullName: clubInfo.president.name,
-    email: clubInfo.president.email,
-    regNumber: clubInfo.president.regNumber,
-    gmail: clubInfo.contacts.gmail,
-    instagram: clubInfo.contacts.instagram,
+  const [formData, setFormData] = useState({
+    name: currentUser.name,
+    email: currentUser.email,
+    password: '',
   });
+  const { addToast } = useToast();
 
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+  const handleUploadClick = () => {
+    addToast('Simulating file upload...', 'info');
   };
 
-  const handleSubmit = (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
+    addToast('Profile settings saved successfully!', 'success');
   };
 
   return (
     <div className="host-settings">
       <HostPageHeader
-        title="Club President & Contacts"
-        subtitle="Update the Lead Organizer profile credentials and contact channels embedded in the Club Profile view."
+        title="Settings & Preferences"
+        subtitle="Manage your personal host account details, security settings, and notification preferences."
       />
 
-      <form className="host-settings__form" onSubmit={handleSubmit}>
-        {/* Profile Picture */}
-        <div className="host-settings__card">
-          <h2 className="host-settings__card-title">President Profile Picture</h2>
+      <form className="host-settings__form" onSubmit={handleSave}>
+        <section className="host-settings__card">
+          <h2 className="host-settings__card-title">Profile Information</h2>
+          
           <div className="host-settings__photo-section">
             <div className="host-settings__photo-preview">
-              <span className="host-settings__photo-initials">
-                {form.fullName.split(' ').map(n => n[0]).join('')}
-              </span>
+              <span className="host-settings__photo-initials">{currentUser.initials}</span>
             </div>
-            <button type="button" className="host-settings__upload-btn">
-              <Upload size={16} strokeWidth={2} />
-              <span>Upload JPG / JPEG</span>
-            </button>
+            <div className="host-settings__photo-info">
+              <button type="button" className="host-settings__upload-btn" onClick={handleUploadClick}>
+                <Upload size={16} strokeWidth={2} />
+                <span>Upload Photo</span>
+              </button>
+              <span className="host-settings__file-name">Recommended: 200x200px JPG or PNG</span>
+            </div>
           </div>
-        </div>
 
-        {/* Profile Fields */}
-        <div className="host-settings__card">
-          <h2 className="host-settings__card-title">President Information</h2>
+          <div style={{ marginTop: 'var(--space-xl)' }} className="host-settings__fields">
+            <div className="host-settings__field">
+              <label className="host-settings__label">Full Name</label>
+              <input 
+                type="text" 
+                className="host-settings__input" 
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </div>
+            <div className="host-settings__field">
+              <label className="host-settings__label">Email Address</label>
+              <input 
+                type="email" 
+                className="host-settings__input" 
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="host-settings__card">
+          <h2 className="host-settings__card-title">Security</h2>
           <div className="host-settings__fields">
             <div className="host-settings__field">
-              <label className="host-settings__label" htmlFor="president-name">
-                President Full Name
-              </label>
-              <input
-                type="text"
-                id="president-name"
-                className="host-settings__input"
-                value={form.fullName}
-                onChange={handleChange('fullName')}
-              />
-            </div>
-            <div className="host-settings__field">
-              <label className="host-settings__label" htmlFor="president-email">
-                President Email Address
-              </label>
-              <input
-                type="email"
-                id="president-email"
-                className="host-settings__input"
-                value={form.email}
-                onChange={handleChange('email')}
-              />
-            </div>
-            <div className="host-settings__field">
-              <label className="host-settings__label" htmlFor="president-reg">
-                President Registration Number
-              </label>
-              <input
-                type="text"
-                id="president-reg"
-                className="host-settings__input"
-                value={form.regNumber}
-                onChange={handleChange('regNumber')}
+              <label className="host-settings__label">New Password</label>
+              <input 
+                type="password" 
+                className="host-settings__input" 
+                placeholder="Leave blank to keep current password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
               />
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Contact Channels */}
-        <div className="host-settings__card">
-          <h2 className="host-settings__card-title">Club Contact Channels</h2>
-          <div className="host-settings__fields">
-            <div className="host-settings__field">
-              <label className="host-settings__label" htmlFor="club-gmail">
-                Club Gmail Contact
-              </label>
-              <input
-                type="email"
-                id="club-gmail"
-                className="host-settings__input"
-                value={form.gmail}
-                onChange={handleChange('gmail')}
-              />
-            </div>
-            <div className="host-settings__field">
-              <label className="host-settings__label" htmlFor="club-instagram">
-                Instagram Profile URL
-              </label>
-              <input
-                type="text"
-                id="club-instagram"
-                className="host-settings__input"
-                value={form.instagram}
-                onChange={handleChange('instagram')}
-              />
-            </div>
-          </div>
-        </div>
-
-        <button type="submit" className="host-settings__save-btn" id="save-profile">
+        <button type="submit" className="host-settings__save-btn">
           <Save size={18} strokeWidth={2} />
-          <span>Save Profile & Contacts</span>
+          <span>Save Changes</span>
         </button>
       </form>
     </div>

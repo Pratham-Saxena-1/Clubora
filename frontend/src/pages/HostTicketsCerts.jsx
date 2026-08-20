@@ -1,29 +1,48 @@
-import { useState } from 'react';
-import { Upload } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Upload, FileCheck, CheckCircle2 } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
 import HostPagination from '../components/HostPagination';
-import { ticketsData } from '../data/mockData';
-import './HostTicketsCerts.css';
+import { useToast } from '../context/ToastContext';
+import { ticketsData as initialTickets } from '../data/mockData';
 
 function HostTicketsCerts() {
   const [search, setSearch] = useState('');
-  const [eventFilter, setEventFilter] = useState('all');
+  const [eventFilter, setEventFilter] = useState('All Events');
   const [currentPage, setCurrentPage] = useState(1);
+  const [tickets, setTickets] = useState(initialTickets);
+  const { addToast } = useToast();
   const pageSize = 10;
 
-  const filtered = ticketsData.filter(
-    (t) =>
+  // Extract unique events for filter dropdown
+  const uniqueEvents = useMemo(() => {
+    const events = new Set(tickets.map(t => t.registeredEvent));
+    return ['All Events', ...Array.from(events)];
+  }, [tickets]);
+
+  const filtered = tickets.filter((t) => {
+    const matchesSearch =
       t.participant.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.participant.email.toLowerCase().includes(search.toLowerCase()) ||
-      t.participant.regNumber.toLowerCase().includes(search.toLowerCase())
-  );
+      t.participant.regNumber.toLowerCase().includes(search.toLowerCase());
+    const matchesEvent = eventFilter === 'All Events' || t.registeredEvent === eventFilter;
+    return matchesSearch && matchesEvent;
+  });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const columns = ['Participant', 'Registered Event', 'QR Entry Pass', 'Event Certificate'];
+  const handleIssueQR = (id, name) => {
+    setTickets(prev => prev.map(t => t.id === id ? { ...t, qrPass: { issued: true } } : t));
+    addToast(`QR Entry Pass issued for ${name}`, 'success');
+  };
+
+  const handleIssueCert = (id, name) => {
+    setTickets(prev => prev.map(t => t.id === id ? { ...t, certificate: { issued: true } } : t));
+    addToast(`Certificate issued for ${name}`, 'success');
+  };
+
+  const columns = ['Participant', 'Event', 'QR Entry Pass', 'Certificate'];
 
   const renderRow = (ticket) => (
     <tr key={ticket.id}>
@@ -40,39 +59,43 @@ function HostTicketsCerts() {
       <td className="host-tickets__event-name">{ticket.registeredEvent}</td>
       <td>
         <div className="host-tickets__status-cell">
-          <span
-            className={`host-data-table__status-badge ${
-              ticket.qrPass.issued
-                ? 'host-data-table__status-badge--issued'
-                : 'host-data-table__status-badge--not-issued'
-            }`}
-          >
-            {ticket.qrPass.issued ? 'Issued' : 'Not Issued'}
-          </span>
-          {!ticket.qrPass.issued && (
-            <button className="host-tickets__upload-btn">
-              <Upload size={12} strokeWidth={2} />
-              <span>Upload</span>
-            </button>
+          {ticket.qrPass.issued ? (
+            <span className="host-data-table__status-badge host-data-table__status-badge--issued">
+              <CheckCircle2 size={12} strokeWidth={2.5} />
+              Issued
+            </span>
+          ) : (
+            <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
+              <input 
+                type="file" 
+                accept="image/*,.pdf" 
+                style={{ display: 'none' }} 
+                onChange={() => handleIssueQR(ticket.id, ticket.participant.name)} 
+              />
+              <Upload size={14} strokeWidth={2} />
+              Issue QR
+            </label>
           )}
         </div>
       </td>
       <td>
         <div className="host-tickets__status-cell">
-          <span
-            className={`host-data-table__status-badge ${
-              ticket.certificate.issued
-                ? 'host-data-table__status-badge--issued'
-                : 'host-data-table__status-badge--not-issued'
-            }`}
-          >
-            {ticket.certificate.issued ? 'Issued' : 'Not Issued'}
-          </span>
-          {!ticket.certificate.issued && (
-            <button className="host-tickets__upload-btn">
-              <Upload size={12} strokeWidth={2} />
-              <span>Upload</span>
-            </button>
+          {ticket.certificate.issued ? (
+            <span className="host-data-table__status-badge host-data-table__status-badge--issued">
+              <FileCheck size={12} strokeWidth={2.5} />
+              Issued
+            </span>
+          ) : (
+            <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
+              <input 
+                type="file" 
+                accept="image/*,.pdf" 
+                style={{ display: 'none' }} 
+                onChange={() => handleIssueCert(ticket.id, ticket.participant.name)} 
+              />
+              <Upload size={14} strokeWidth={2} />
+              Issue Cert
+            </label>
           )}
         </div>
       </td>
@@ -83,31 +106,32 @@ function HostTicketsCerts() {
     <div className="host-tickets">
       <HostPageHeader
         title="Tickets & Certificates"
-        subtitle="Issue scannable entry QR passes and generate achievement certificates for registered participants."
+        subtitle="Issue QR entry passes for upcoming events and distribute completion certificates."
       />
 
       <div className="host-tickets__controls">
-        <select
-          className="host-tickets__filter"
-          value={eventFilter}
-          onChange={(e) => setEventFilter(e.target.value)}
-          id="event-filter"
-        >
-          <option value="all">All Registered Events</option>
-        </select>
-
         <HostSearchBar
-          placeholder="Search participant details…"
+          placeholder="Search participant name or registration ID…"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           id="tickets-search"
         />
+        <select
+          className="host-tickets__filter"
+          value={eventFilter}
+          onChange={(e) => { setEventFilter(e.target.value); setCurrentPage(1); }}
+          aria-label="Filter by event"
+        >
+          {uniqueEvents.map(evt => (
+            <option key={evt} value={evt}>{evt}</option>
+          ))}
+        </select>
       </div>
 
       <HostDataTable
         columns={columns}
         data={paged}
-        emptyMessage="No participant records match your search."
+        emptyMessage="No ticket records match your criteria."
         renderRow={renderRow}
       />
 

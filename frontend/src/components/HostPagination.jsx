@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import './HostPagination.css';
 
 function HostPagination({ currentPage, totalPages, totalEntries, pageSize, onPageChange }) {
   const startEntry = (currentPage - 1) * pageSize + 1;

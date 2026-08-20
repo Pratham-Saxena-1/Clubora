@@ -1,5 +1,4 @@
 import { Search } from 'lucide-react';
-import './HostSearchBar.css';
 
 function HostSearchBar({ placeholder, value, onChange, id }) {
   return (
