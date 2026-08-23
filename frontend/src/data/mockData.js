@@ -165,3 +165,42 @@ export const supportTickets = [
     ]
   }
 ];
+
+// --- STUDENT MOCK DATA ---
+
+export const currentStudent = {
+  name: 'Pratham Saxena',
+  regNumber: '24BAI10712',
+  email: 'pratham.saxena2024@vitstudent.ac.in',
+  branch: 'Computer Science & Engineering (AI & ML)',
+  photo: null,
+};
+
+export const studentStats = {
+  registeredEvents: 12,
+  eventsAttended: 8,
+  certificatesClaimed: 5,
+  applicationsSent: 4,
+};
+
+export const studentRegisteredEvents = [
+  { id: 1, title: 'AI & Machine Learning Workshop', date: '2026-09-15', time: '10:00 AM', location: 'Main Auditorium', status: 'CONFIRMED', club: 'TechVerse', clubLogo: 'TV', isPaid: true },
+  { id: 2, title: 'Hackathon 2026: Code for Change', date: '2026-10-05', time: '09:00 AM', location: 'Innovation Lab', status: 'PAYMENT PENDING', club: 'TechVerse', clubLogo: 'TV', isPaid: false },
+];
+
+export const studentApplications = [
+  { id: 1, club: 'TechVerse', role: 'Technical Lead', status: 'Accepted', date: '2026-08-10' },
+  { id: 2, club: 'DesignHub', role: 'UI/UX Designer', status: 'Pending', date: '2026-08-15' },
+];
+
+export const studentCertificates = [
+  { id: 1, title: 'Intro to Python Bootcamp Certificate', date: '2026-02-10', club: 'TechVerse' },
+  { id: 2, title: 'Cloud Computing with AWS Certificate', date: '2026-03-22', club: 'TechVerse' },
+];
+
+export const allCampusClubs = [
+  { id: 1, name: 'TechVerse Club', shortName: 'TV', category: 'Technology & Innovation', memberCount: 120, eventsHosted: 15 },
+  { id: 2, name: 'DesignHub', shortName: 'DH', category: 'Arts & Design', memberCount: 85, eventsHosted: 8 },
+  { id: 3, name: 'Debate Society', shortName: 'DS', category: 'Academic Debate', memberCount: 50, eventsHosted: 22 },
+];
+

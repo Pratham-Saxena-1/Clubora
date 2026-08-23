@@ -62,7 +62,7 @@ function LandingPage() {
           </button>
           <button
             className="landing__cta landing__cta--student"
-            onClick={() => navigate('/host/dashboard')}
+            onClick={() => navigate('/student/dashboard')}
             id="sign-in-student"
           >
             <span>Sign in as Student</span>
