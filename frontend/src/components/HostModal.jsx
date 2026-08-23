@@ -24,11 +24,11 @@ function HostModal({ isOpen, onClose, title, children, footer }) {
             <X size={20} strokeWidth={2} />
           </button>
         </div>
-        
+
         <div className="host-modal__body">
           {children}
         </div>
-        
+
         {footer && (
           <div className="host-modal__footer">
             {footer}

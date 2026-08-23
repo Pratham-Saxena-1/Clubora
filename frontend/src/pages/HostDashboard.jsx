@@ -12,10 +12,8 @@ function HostDashboard() {
   
   // File inputs state
   const [bannerFileName, setBannerFileName] = useState('No file chosen');
-  const [logoFileName, setLogoFileName] = useState('No file chosen');
   
   const bannerInputRef = useRef(null);
-  const logoInputRef = useRef(null);
   
   const { addToast } = useToast();
 
@@ -32,14 +30,12 @@ function HostDashboard() {
   const openCreateModal = () => {
     setEditingEvent(null);
     setBannerFileName('No file chosen');
-    setLogoFileName('No file chosen');
     setIsModalOpen(true);
   };
   
   const openEditModal = (event) => {
     setEditingEvent(event);
     setBannerFileName('No file chosen');
-    setLogoFileName('No file chosen');
     setIsModalOpen(true);
   };
 
@@ -70,6 +66,7 @@ function HostDashboard() {
           </button>
         </div>
       </section>
+
 
       <HostModal
         isOpen={isModalOpen}
@@ -108,6 +105,16 @@ function HostDashboard() {
             />
           </div>
           <div className="host-modal__field">
+            <label className="host-modal__label">Venue</label>
+            <input 
+              type="text" 
+              className="host-modal__input" 
+              placeholder="e.g. Main Auditorium"
+              defaultValue={editingEvent?.venue || ''}
+              required 
+            />
+          </div>
+          <div className="host-modal__field">
             <label className="host-modal__label">Description</label>
             <textarea 
               className="host-modal__textarea" 
@@ -134,27 +141,6 @@ function HostDashboard() {
                 style={{ display: 'none' }}
                 accept="image/jpeg, image/jpg"
                 onChange={(e) => setBannerFileName(e.target.files[0]?.name || 'No file chosen')}
-              />
-            </div>
-          </div>
-          
-          <div className="host-modal__field">
-            <label className="host-modal__label" style={{ textTransform: 'none', color: 'var(--text-secondary)' }}>Club Logo / Club Image (JPEG/JPG only)</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-              <button 
-                type="button" 
-                onClick={() => logoInputRef.current?.click()}
-                style={{ padding: '8px 16px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontSize: 'var(--font-sm)', fontWeight: 600 }}
-              >
-                Choose file
-              </button>
-              <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-tertiary)' }}>{logoFileName}</span>
-              <input 
-                type="file" 
-                ref={logoInputRef}
-                style={{ display: 'none' }}
-                accept="image/jpeg, image/jpg"
-                onChange={(e) => setLogoFileName(e.target.files[0]?.name || 'No file chosen')}
               />
             </div>
           </div>

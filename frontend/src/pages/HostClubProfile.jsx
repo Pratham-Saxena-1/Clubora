@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Mail, Camera, Pencil, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { Plus, Camera, Pencil, Image as ImageIcon, X } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostModal from '../components/HostModal';
 import { useToast } from '../context/ToastContext';
@@ -9,13 +9,39 @@ import { clubInfo, teamMembers, pastEvents } from '../data/mockData';
 function HostClubProfile() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [galleryEvent, setGalleryEvent] = useState(null);
+  const [expandedPhoto, setExpandedPhoto] = useState(null);
+  const [memberDetails, setMemberDetails] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoError, setPhotoError] = useState('');
   const { addToast } = useToast();
   const navigate = useNavigate();
 
   const handleAddMember = (e) => {
     e.preventDefault();
+    if (photoError) {
+      addToast('Please resolve photo errors before submitting.', 'error');
+      return;
+    }
     setIsModalOpen(false);
+    setPhotoPreview(null);
+    setPhotoError('');
     addToast('Team member added to hierarchy', 'success');
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.type === 'image/jpeg' || file.type === 'image/jpg') {
+        setPhotoPreview(URL.createObjectURL(file));
+        setPhotoError('');
+      } else {
+        setPhotoPreview(null);
+        setPhotoError('Invalid format. Only JPEG/JPG allowed.');
+      }
+    } else {
+      setPhotoPreview(null);
+      setPhotoError('');
+    }
   };
 
   const handleContactClick = (platform) => {
@@ -25,9 +51,27 @@ function HostClubProfile() {
   const openGallery = (evt) => {
     if (evt.images && evt.images.length > 0) {
       setGalleryEvent(evt);
+      setExpandedPhoto(null);
     } else {
       addToast('No images uploaded for this event yet.', 'info');
     }
+  };
+
+  const renderTree = (parentId = null) => {
+    const children = teamMembers.filter(m => m.parentId === parentId);
+    if (!children.length) return null;
+    return (
+      <ul>
+        {children.map(member => (
+          <li key={member.id}>
+            <div className="hierarchy-tree__content" onClick={() => setMemberDetails(member)}>
+              {member.name}
+            </div>
+            {renderTree(member.id)}
+          </li>
+        ))}
+      </ul>
+    );
   };
 
   return (
@@ -43,44 +87,17 @@ function HostClubProfile() {
           <section className="host-club-profile__card">
             <h2 className="host-club-profile__card-title">Manage Club Team Hierarchy</h2>
             <div className="host-club-profile__hierarchy">
-              
-              <div className="host-club-profile__member-card">
-                <span className="host-club-profile__role-tag">LEAD ORGANIZER</span>
-                <div className="host-club-profile__member-avatar">
-                  {clubInfo.president.photo ? (
-                    <img src={clubInfo.president.photo} alt={clubInfo.president.name} className="host-club-profile__member-photo" />
-                  ) : (
-                    <span className="host-club-profile__member-initials">
-                      {clubInfo.president.name.split(' ').map(n => n[0]).join('')}
-                    </span>
-                  )}
-                </div>
-                <h3 className="host-club-profile__member-name">{clubInfo.president.name}</h3>
-                <p className="host-club-profile__member-detail">{clubInfo.president.regNumber}</p>
-                <p className="host-club-profile__member-detail">{clubInfo.president.email}</p>
-                <p className="host-club-profile__member-detail">Est. {clubInfo.established}</p>
-              </div>
-
-              <div className="host-club-profile__connector">
-                <div className="host-club-profile__connector-line" />
-              </div>
-
-              <div className="host-club-profile__team-members">
-                {teamMembers.map(member => (
-                  <div key={member.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div className="host-club-profile__member-card" style={{ padding: 'var(--space-md)' }}>
-                      <span className="host-club-profile__role-tag" style={{ background: 'var(--info-soft)', color: 'var(--info)' }}>{member.role.toUpperCase()}</span>
-                      <h3 className="host-club-profile__member-name" style={{ fontSize: 'var(--font-sm)' }}>{member.name}</h3>
-                      <p className="host-club-profile__member-detail">{member.regNumber}</p>
+              <div className="hierarchy-tree">
+                <ul>
+                  <li>
+                    <div className="hierarchy-tree__content hierarchy-tree__content--root" onClick={() => setMemberDetails(clubInfo.president)}>
+                      {clubInfo.president.name}
                     </div>
-                    <div className="host-club-profile__connector">
-                      <div className="host-club-profile__connector-line" style={{ height: '20px' }} />
-                    </div>
-                  </div>
-                ))}
+                    {renderTree(null)}
+                  </li>
+                </ul>
               </div>
-
-              <button className="host-club-profile__add-member" onClick={() => setIsModalOpen(true)}>
+              <button className="host-club-profile__add-member" onClick={() => setIsModalOpen(true)} style={{ marginTop: 'var(--space-xl)' }}>
                 <Plus size={20} strokeWidth={2} />
                 <span>Add Team Member</span>
               </button>
@@ -155,23 +172,23 @@ function HostClubProfile() {
           <section className="host-club-profile__card">
             <div className="host-club-profile__card-header">
               <h2 className="host-club-profile__card-title">Connect Contacts</h2>
-              <button className="host-club-profile__edit-btn" onClick={() => navigate('/host/settings')} aria-label="Edit contacts">
-                <Pencil size={16} strokeWidth={1.8} />
-              </button>
             </div>
             <div className="host-club-profile__contacts">
-              <div className="host-club-profile__contact-tile" onClick={() => handleContactClick('Gmail')}>
-                <Mail size={18} strokeWidth={1.8} />
+              <a href={`mailto:${clubInfo.contacts.gmail}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer">
+                <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
                 <span>Gmail</span>
-              </div>
-              <div className="host-club-profile__contact-tile" onClick={() => handleContactClick('Instagram')}>
+              </a>
+              <a href={`https://instagram.com/${clubInfo.contacts.instagram.replace('@', '')}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer">
                 <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                   <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                   <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
                 </svg>
                 <span>Instagram</span>
-              </div>
+              </a>
             </div>
           </section>
         </div>
@@ -190,17 +207,64 @@ function HostClubProfile() {
         }
       >
         <form onSubmit={handleAddMember}>
-          <div className="host-modal__field">
-            <label className="host-modal__label">Full Name</label>
-            <input type="text" className="host-modal__input" placeholder="e.g. Jessica Wang" required />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Full Name</label>
+              <input type="text" className="host-modal__input" placeholder="e.g. Jessica Wang" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Designation / Role</label>
+              <input type="text" className="host-modal__input" placeholder="e.g. Technical Lead" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Registration Number</label>
+              <input type="text" className="host-modal__input" placeholder="e.g. REG-2024-045" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Email ID</label>
+              <input type="email" className="host-modal__input" placeholder="e.g. email@university.edu" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Date of Joining</label>
+              <input type="date" className="host-modal__input" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Gender</label>
+              <select className="host-modal__input" required style={{ background: 'var(--bg-tertiary)' }}>
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Contact Number</label>
+              <input type="tel" className="host-modal__input" placeholder="e.g. +1 555-0123" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Hierarchy Level</label>
+              <input type="number" min="1" max="10" className="host-modal__input" placeholder="e.g. 2" required />
+            </div>
           </div>
-          <div className="host-modal__field">
-            <label className="host-modal__label">Role</label>
-            <input type="text" className="host-modal__input" placeholder="e.g. Technical Lead" required />
-          </div>
-          <div className="host-modal__field">
-            <label className="host-modal__label">Registration Number</label>
-            <input type="text" className="host-modal__input" placeholder="e.g. REG-2024-045" required />
+          <div className="host-modal__field" style={{ marginTop: 'var(--space-md)' }}>
+            <label className="host-modal__label">Photo Upload (JPEG/JPG only, Optional)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+              {photoPreview && (
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-full)', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                  <img src={photoPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+              <div style={{ flex: 1 }}>
+                <input 
+                  type="file" 
+                  className="host-modal__input" 
+                  accept="image/jpeg, image/jpg"
+                  onChange={handlePhotoChange}
+                  style={{ padding: '8px' }}
+                />
+                {photoError && <div style={{ color: 'var(--danger)', fontSize: 'var(--font-xs)', marginTop: '4px' }}>{photoError}</div>}
+              </div>
+            </div>
           </div>
         </form>
       </HostModal>
@@ -208,14 +272,75 @@ function HostClubProfile() {
       {/* Gallery Modal */}
       <HostModal
         isOpen={!!galleryEvent}
-        onClose={() => setGalleryEvent(null)}
+        onClose={() => { setGalleryEvent(null); setExpandedPhoto(null); }}
         title={galleryEvent?.title}
       >
         {galleryEvent && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-            {galleryEvent.images?.map((img, idx) => (
-              <img key={idx} src={img} alt={`Event photo ${idx+1}`} style={{ width: '100%', borderRadius: 'var(--radius-md)' }} />
-            ))}
+          <div className="arc-gallery-wrapper">
+            {expandedPhoto ? (
+              <div className="arc-gallery-expanded">
+                <button className="arc-gallery-close-btn" onClick={() => setExpandedPhoto(null)}>
+                  <X size={24} color="#fff" />
+                </button>
+                <img src={expandedPhoto} alt="Expanded view" className="arc-gallery-expanded-img" />
+              </div>
+            ) : (
+              <div className="arc-gallery">
+                {galleryEvent.images?.map((img, idx) => {
+                  const total = galleryEvent.images.length;
+                  const middle = (total - 1) / 2;
+                  const offset = idx - middle;
+                  const rotation = offset * 15;
+                  const translationY = Math.abs(offset) * 15;
+                  
+                  return (
+                    <img 
+                      key={idx} 
+                      src={img} 
+                      alt={`Event photo ${idx+1}`} 
+                      className="arc-gallery__item"
+                      style={{
+                        '--rot': `${rotation}deg`,
+                        '--transY': `${translationY}px`,
+                        zIndex: total - Math.abs(offset)
+                      }}
+                      onClick={() => setExpandedPhoto(img)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </HostModal>
+
+      {/* Member Details Modal */}
+      <HostModal
+        isOpen={!!memberDetails}
+        onClose={() => setMemberDetails(null)}
+        title="Member Details"
+      >
+        {memberDetails && (
+          <div className="host-club-profile__member-detail-modal">
+             <div className="host-club-profile__member-avatar" style={{ width: '100px', height: '100px', margin: '0 auto var(--space-md)' }}>
+               {memberDetails.photo ? (
+                 <img src={memberDetails.photo} alt={memberDetails.name} className="host-club-profile__member-photo" />
+               ) : (
+                 <span className="host-club-profile__member-initials" style={{ fontSize: 'var(--font-3xl)' }}>
+                   {memberDetails.initials || memberDetails.name.split(' ').map(n => n[0]).join('')}
+                 </span>
+               )}
+             </div>
+             <h3 className="host-club-profile__member-name" style={{ textAlign: 'center', fontSize: 'var(--font-lg)' }}>{memberDetails.name}</h3>
+             <span className="host-club-profile__role-tag" style={{ display: 'block', width: 'fit-content', margin: '0 auto var(--space-lg)' }}>{memberDetails.role}</span>
+             
+             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
+                <div><strong style={{ color: 'var(--text-secondary)' }}>Email:</strong> <p>{memberDetails.email}</p></div>
+                <div><strong style={{ color: 'var(--text-secondary)' }}>Reg Number:</strong> <p>{memberDetails.regNumber}</p></div>
+                <div><strong style={{ color: 'var(--text-secondary)' }}>Date of Joining:</strong> <p>{memberDetails.dateOfJoining || 'N/A'}</p></div>
+                <div><strong style={{ color: 'var(--text-secondary)' }}>Gender:</strong> <p>{memberDetails.gender || 'N/A'}</p></div>
+                <div><strong style={{ color: 'var(--text-secondary)' }}>Contact:</strong> <p>{memberDetails.contact || 'N/A'}</p></div>
+             </div>
           </div>
         )}
       </HostModal>
