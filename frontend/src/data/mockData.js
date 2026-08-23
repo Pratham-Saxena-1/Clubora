@@ -29,9 +29,10 @@ export const clubInfo = {
 };
 
 export const teamMembers = [
-  { id: 1, name: 'Jessica Wang', role: 'Technical Lead', initials: 'JW', regNumber: 'REG-2024-045', email: 'jess.w@university.edu' },
-  { id: 2, name: 'Marcus Johnson', role: 'Event Coordinator', initials: 'MJ', regNumber: 'REG-2024-078', email: 'marcus.j@university.edu' },
-  { id: 3, name: 'Priya Patel', role: 'Marketing Head', initials: 'PP', regNumber: 'REG-2024-112', email: 'priya.p@university.edu' },
+  { id: 1, name: 'Jessica Wang', role: 'Technical Lead', initials: 'JW', regNumber: 'REG-2024-045', email: 'jess.w@university.edu', dateOfJoining: '2023-09-01', gender: 'Female', contact: '+1 (555) 123-4567', photo: null, level: 2, parentId: null },
+  { id: 2, name: 'Marcus Johnson', role: 'Event Coordinator', initials: 'MJ', regNumber: 'REG-2024-078', email: 'marcus.j@university.edu', dateOfJoining: '2024-01-15', gender: 'Male', contact: '+1 (555) 987-6543', photo: null, level: 2, parentId: null },
+  { id: 3, name: 'Priya Patel', role: 'Marketing Head', initials: 'PP', regNumber: 'REG-2024-112', email: 'priya.p@university.edu', dateOfJoining: '2023-11-10', gender: 'Female', contact: '+1 (555) 456-7890', photo: null, level: 3, parentId: 2 },
+  { id: 4, name: 'David Lee', role: 'Designer', initials: 'DL', regNumber: 'REG-2024-150', email: 'david.l@university.edu', dateOfJoining: '2024-02-20', gender: 'Male', contact: '+1 (555) 111-2222', photo: null, level: 3, parentId: 1 },
 ];
 
 export const upcomingEvents = [
