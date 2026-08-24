@@ -1,22 +1,20 @@
-import { CalendarCheck, UserCheck, Award, Send, ArrowRight } from 'lucide-react';
+import { CalendarCheck, Download, Award, ArrowRight, Bell } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
-import HostStatCard from '../components/HostStatCard';
-import { currentStudent, studentStats, studentRegisteredEvents } from '../data/mockData';
+import { currentStudent, studentRegisteredEvents, studentCertificates, studentApplications } from '../data/mockData';
 import { useNavigate } from 'react-router-dom';
 
 function StudentDashboard() {
   const navigate = useNavigate();
 
-  const stats = [
-    { id: 1, value: studentStats.registeredEvents, label: 'Registered Events', icon: CalendarCheck, colorClass: 'host-stat-card--purple' },
-    { id: 2, value: studentStats.eventsAttended, label: 'Events Attended', icon: UserCheck, colorClass: 'host-stat-card--blue' },
-    { id: 3, value: studentStats.certificatesClaimed, label: 'Certificates Claimed', icon: Award, colorClass: 'host-stat-card--green' },
-    { id: 4, value: studentStats.applicationsSent, label: 'Applications Sent', icon: Send, colorClass: 'host-stat-card--orange' },
-  ];
-
   const handleViewAllEvents = () => {
     navigate('/student/discover');
   };
+
+  const latestUpdates = [
+    { id: 1, text: 'Venue changed for Web3 Hackathon 2026 to Innovation Lab.', time: '2 hours ago' },
+    { id: 2, text: 'TechVerse Club accepted your application for Technical Lead.', time: '5 hours ago' },
+    { id: 3, text: 'Entry passes are now available for AI & Machine Learning Workshop.', time: '1 day ago' }
+  ];
 
   return (
     <div className="host-dashboard">
@@ -25,66 +23,124 @@ function StudentDashboard() {
         subtitle="Here is an overview of your campus activities, event registrations, and club engagements."
       />
 
-      <section className="host-dashboard__section">
-        <div className="host-dashboard__stats-grid">
-          {stats.map((stat) => (
-            <HostStatCard
-              key={stat.id}
-              icon={stat.icon}
-              value={stat.value}
-              label={stat.label}
-              colorClass={stat.colorClass}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="host-dashboard__section">
-        <h2 className="host-dashboard__section-title">Upcoming Registered Events</h2>
+      {/* Main Grid: 2 Columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '32px' }}>
         
-        {studentRegisteredEvents.length > 0 ? (
-          <div className="host-dashboard__events-grid">
-            {studentRegisteredEvents.map((event) => (
-              <div key={event.id} className="host-event-card">
-                <div className="host-event-card__cover" style={{ height: '100px', background: 'var(--bg-tertiary)' }}>
-                  <div className="host-event-card__cover-placeholder" style={{ opacity: 0.5, fontSize: '2rem', fontWeight: 'bold', color: 'var(--text-tertiary)' }}>
-                    {event.clubLogo}
+        {/* Left Column: Certificates & Updates */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          
+          {/* Certificates Panel */}
+          <section className="host-dashboard__section" style={{ animationDelay: '100ms' }}>
+            <h2 className="host-dashboard__section-title" style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Certificates</h2>
+            <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '8px' }}>
+              {studentCertificates.map(cert => (
+                <div key={cert.id} style={{ minWidth: '260px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'transform 0.2s', cursor: 'pointer' }} className="hover-lift">
+                  <div>
+                    <Award size={24} style={{ color: 'var(--primary)', marginBottom: '16px' }} />
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.4 }}>{cert.title}</h4>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{cert.club}</span>
                   </div>
-                </div>
-
-                <div className="host-event-card__body">
-                  <span style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', background: event.status === 'CONFIRMED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: event.status === 'CONFIRMED' ? '#10b981' : '#f59e0b', width: 'fit-content', marginBottom: '8px' }}>
-                    {event.status}
-                  </span>
-                  <h3 className="host-event-card__title">{event.title}</h3>
-                  <div className="host-event-card__date" style={{ marginTop: '8px' }}>
-                    <CalendarCheck size={14} strokeWidth={1.8} />
-                    <span>{event.date} · {event.time}</span>
-                  </div>
-                  <p className="host-event-card__desc" style={{ marginTop: '4px' }}>Location: {event.location}</p>
-
-                  <div className="host-event-card__footer" style={{ justifyContent: 'flex-end', marginTop: '12px' }}>
-                    <button className="host-modal__btn host-modal__btn--primary" style={{ padding: '6px 12px', fontSize: '12px' }}>
-                      View Ticket
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                    <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>{cert.date}</span>
+                    <button style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                      <Download size={14} />
                     </button>
                   </div>
                 </div>
+              ))}
+              <div style={{ minWidth: '260px', background: 'transparent', border: '1px dashed var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+                <span style={{ fontSize: '24px', marginBottom: '8px' }}>+</span>
+                <span style={{ fontSize: '12px', fontWeight: 500 }}>Complete more events<br />to earn certificates</span>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ padding: '32px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-            <p style={{ color: 'var(--text-secondary)' }}>You haven't registered for any upcoming events.</p>
-          </div>
-        )}
+            </div>
+          </section>
 
-        <div className="host-dashboard__view-all" style={{ marginTop: '16px' }}>
-          <button className="host-dashboard__view-all-btn" onClick={handleViewAllEvents}>
-            <span>Discover More Events</span>
-            <ArrowRight size={16} strokeWidth={2} />
-          </button>
+          {/* Latest Updates */}
+          <section className="host-dashboard__section" style={{ animationDelay: '200ms' }}>
+            <h2 className="host-dashboard__section-title" style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Latest Updates</h2>
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+              {latestUpdates.map((update, idx) => (
+                <div key={update.id} style={{ display: 'flex', gap: '16px', padding: '16px 20px', borderBottom: idx !== latestUpdates.length - 1 ? '1px solid var(--border)' : 'none', background: idx === 0 ? 'rgba(179, 141, 69, 0.05)' : 'transparent' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === 0 ? 'var(--primary)' : 'var(--text-secondary)', flexShrink: 0 }}>
+                    <Bell size={16} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '13px', color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.5 }}>{update.text}</p>
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{update.time}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
         </div>
-      </section>
+
+        {/* Right Column: Applications & Upcoming Events */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          
+          {/* Applications Panel */}
+          <section className="host-dashboard__section" style={{ animationDelay: '150ms' }}>
+            <h2 className="host-dashboard__section-title" style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Applications</h2>
+            <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
+              {studentApplications.map((app, idx) => (
+                <div key={app.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', borderBottom: idx !== studentApplications.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                      {app.club.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>{app.club}</h4>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{app.role}</span>
+                    </div>
+                  </div>
+                  <button style={{ fontSize: '11px', fontWeight: 600, color: 'var(--primary)', padding: '6px 12px', background: 'var(--accent-soft)', borderRadius: '4px' }}>
+                    View
+                  </button>
+                </div>
+              ))}
+              <div style={{ padding: '16px', textAlign: 'center', borderTop: '1px solid var(--border)' }}>
+                <button style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', transition: 'color 0.2s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--text-primary)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-secondary)'} onClick={() => navigate('/student/recruitments')}>
+                  View All Applications <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          {/* Upcoming Registered Events (Mini List) */}
+          <section className="host-dashboard__section" style={{ animationDelay: '250ms' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h2 className="host-dashboard__section-title" style={{ fontSize: '1.2rem', margin: 0 }}>Upcoming Events</h2>
+              <button style={{ fontSize: '12px', color: 'var(--primary)' }} onClick={handleViewAllEvents}>See all</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {studentRegisteredEvents.slice(0, 2).map((event) => (
+                <div key={event.id} style={{ display: 'flex', gap: '12px', padding: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+                    {event.clubLogo}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{event.title}</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                      <CalendarCheck size={12} />
+                      <span>{event.date}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+        </div>
+      </div>
+      
+      <style>{`
+        .hover-lift:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          border-color: var(--border-light) !important;
+        }
+      `}</style>
     </div>
   );
 }
