@@ -33,15 +33,15 @@ function StudentSupport() {
   return (
     <div className="host-dashboard">
       <StudentPageHeader
-        title="Support"
-        subtitle=""
+        title="Club Support"
+        subtitle="Connect with the Heart of Campus Clubs."
       />
 
       {/* Header Banner */}
-      <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '40px', marginBottom: '24px' }}>
-        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Help Desk</span>
-        <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)', margin: '8px 0 16px 0' }}>Connect with the Heart of Campus Clubs.</h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: 1.6 }}>
+      <div style={{ background: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: 'var(--radius-lg)', padding: '40px', marginBottom: '32px', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Help Desk</span>
+        <h2 style={{ fontSize: '2.2rem', fontWeight: 700, color: 'var(--text-primary)', margin: '12px 0 16px 0', letterSpacing: '-0.5px' }}>How can we help?</h2>
+        <p style={{ fontSize: '15px', color: 'var(--text-secondary)', maxWidth: '600px', lineHeight: 1.6 }}>
           Have questions about an upcoming hackathon, workshop, or recruitment cycle? Reach out directly to club organizers for rapid support.
         </p>
       </div>
@@ -49,15 +49,15 @@ function StudentSupport() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px', alignItems: 'start' }}>
         
         {/* Main Form Area */}
-        <div style={{ background: 'var(--bg-secondary)', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+        <div style={{ background: 'var(--bg-secondary)', padding: '40px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.03)', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
           {ticketRef ? (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', marginBottom: '16px' }}>
-                <CheckCircle size={32} />
+            <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', marginBottom: '24px' }}>
+                <CheckCircle size={40} />
               </div>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Message Sent</h3>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Your inquiry has been received. We usually respond within 24 hours.</p>
-              <div style={{ marginTop: '32px' }}>
+              <h3 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px', letterSpacing: '-0.5px' }}>Message Sent</h3>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px' }}>Your inquiry has been received. We usually respond within 24 hours.</p>
+              <div>
                 <button className="host-modal__btn host-modal__btn--secondary" onClick={() => setTicketRef(null)}>
                   Send Another Message
                 </button>
@@ -172,21 +172,21 @@ function StudentSupport() {
 
         {/* FAQ Sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ background: 'var(--bg-secondary)', padding: '32px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <HelpCircle size={18} style={{ color: 'var(--primary)' }} /> General FAQ
+          <div style={{ background: 'var(--bg-secondary)', padding: '40px 32px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.03)', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.5px' }}>
+              <HelpCircle size={20} style={{ color: 'var(--primary)' }} /> General FAQ
             </h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div>
                 <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '8px', fontSize: '14px' }}>How do I verify a payment?</strong>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                   Submit an inquiry select the payment verification category and attach receipt details.
                 </p>
               </div>
               <div>
                 <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: '8px', fontSize: '14px' }}>Recruitment drive results?</strong>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                   Check 'Clubs Recruitments' or review direct inbox updates for selection sheets.
                 </p>
               </div>

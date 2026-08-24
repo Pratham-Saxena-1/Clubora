@@ -28,7 +28,13 @@ function StudentTopBar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const unreadCount = mockNotifications.filter(n => !n.read).length;
+  const studentUpdates = [
+    { id: 1, text: 'Venue changed for Web3 Hackathon 2026 to Innovation Lab.', time: '2 hours ago', read: false },
+    { id: 2, text: 'TechVerse Club accepted your application for Technical Lead.', time: '5 hours ago', read: false },
+    { id: 3, text: 'Entry passes are now available for AI & Machine Learning Workshop.', time: '1 day ago', read: true }
+  ];
+
+  const unreadCount = studentUpdates.filter(n => !n.read).length;
 
   return (
     <header className="host-topbar">
@@ -168,7 +174,7 @@ function StudentTopBar() {
                 Notifications
               </div>
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                {mockNotifications.map(n => (
+                {studentUpdates.map(n => (
                   <div key={n.id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--bg-tertiary)' }}>
                     <div style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)', marginBottom: '4px' }}>{n.text}</div>
                     <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{n.time}</div>
