@@ -4,7 +4,7 @@ import HostPageHeader from '../components/HostPageHeader';
 import HostStatCard from '../components/HostStatCard';
 import HostModal from '../components/HostModal';
 import { useToast } from '../context/ToastContext';
-import { recruitmentStats, vacanciesData } from '../data/mockData';
+import { vacanciesData, applicantsData } from '../data/mockData';
 
 function HostRecruitment() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,25 +32,25 @@ function HostRecruitment() {
       <div className="host-recruitment__stats">
         <HostStatCard
           icon={Briefcase}
-          value={recruitmentStats.activeVacancies}
+          value={vacanciesData.length}
           label="Active Vacancies"
           colorClass="host-stat-card--info"
         />
         <HostStatCard
           icon={Users}
-          value={recruitmentStats.totalApplicants}
+          value={applicantsData.length}
           label="Total Applicants"
           colorClass="host-stat-card--success"
         />
         <HostStatCard
           icon={CalendarCheck}
-          value={recruitmentStats.interviewsSet}
+          value={applicantsData.filter(a => a.status === 'interview').length}
           label="Interviews Set"
           colorClass="host-stat-card--warning"
         />
         <HostStatCard
           icon={UserCheck}
-          value={recruitmentStats.hiredThisMonth}
+          value={applicantsData.filter(a => a.status === 'hired').length}
           label="Hired This Month"
           colorClass="host-stat-card--danger"
         />
@@ -66,8 +66,6 @@ function HostRecruitment() {
                 <p className="host-recruitment__vacancy-desc">{vacancy.description}</p>
                 <div className="host-recruitment__vacancy-meta">
                   <span style={{ background: 'var(--accent-soft)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>{vacancy.type}</span>
-                  <span>•</span>
-                  <span>{vacancy.applicants} Applicants</span>
                   <span>•</span>
                   <span>Ends {vacancy.deadline}</span>
                 </div>

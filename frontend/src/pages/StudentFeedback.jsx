@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, Send, MessageSquare } from 'lucide-react';
+import { Star, Send, MessageSquare, CheckCircle } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
 import { pastEvents } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
@@ -42,7 +42,7 @@ function StudentFeedback() {
         subtitle="Rate and review the events you have attended to help organizers improve."
       />
 
-      <div className="host-dashboard__events-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '24px' }}>
+      <div className="host-dashboard__events-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
         {pastEvents.map((event) => {
           const isSubmitted = feedbacks[event.id]?.submitted;
           const currentRating = feedbacks[event.id]?.rating || 0;
@@ -87,7 +87,7 @@ function StudentFeedback() {
                     onClick={() => handleSubmit(event.id)}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
-                    <Send size={16} /> Submit Feedback
+                    <CheckCircle size={16} /> Submit Feedback
                   </button>
                 </div>
               ) : (
