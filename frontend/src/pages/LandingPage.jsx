@@ -54,18 +54,18 @@ function LandingPage() {
         <div className="landing__cta-group">
           <button
             className="landing__cta landing__cta--host"
-            onClick={() => navigate('/host/dashboard')}
+            onClick={() => navigate('/login')}
             id="sign-in-host"
           >
-            <span>Sign in as Host</span>
+            <span>Sign In</span>
             <ArrowRight size={18} strokeWidth={2} />
           </button>
           <button
             className="landing__cta landing__cta--student"
-            onClick={() => navigate('/student/dashboard')}
+            onClick={() => navigate('/signup')}
             id="sign-in-student"
           >
-            <span>Sign in as Student</span>
+            <span>Create Account</span>
             <ArrowRight size={18} strokeWidth={2} />
           </button>
         </div>

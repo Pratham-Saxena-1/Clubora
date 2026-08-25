@@ -1,8 +1,13 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
 import HostLayout from './layouts/HostLayout';
 import LandingPage from './pages/LandingPage';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 import HostDashboard from './pages/HostDashboard';
 import HostClubProfile from './pages/HostClubProfile';
 import HostRecruitment from './pages/HostRecruitment';
@@ -25,33 +30,47 @@ function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <HashRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/host" element={<HostLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<HostDashboard />} />
-              <Route path="club-profile" element={<HostClubProfile />} />
-              <Route path="recruitment" element={<HostRecruitment />} />
-              <Route path="applicants" element={<HostApplicants />} />
-              <Route path="registrations" element={<HostRegistrations />} />
-              <Route path="tickets-certs" element={<HostTicketsCerts />} />
-              <Route path="support" element={<HostSupport />} />
-              <Route path="settings" element={<HostSettings />} />
-            </Route>
-            <Route path="/student" element={<StudentLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<StudentDashboard />} />
-              <Route path="discover" element={<StudentDiscover />} />
-              <Route path="clubs" element={<StudentClubs />} />
-              <Route path="recruitments" element={<StudentRecruitments />} />
-              <Route path="feedback" element={<StudentFeedback />} />
-              <Route path="support" element={<StudentSupport />} />
-              <Route path="settings" element={<StudentSettings />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </HashRouter>
+        <AuthProvider>
+          <HashRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              
+              {/* Host Protected Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['Host']} />}>
+                <Route path="/host" element={<HostLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<HostDashboard />} />
+                  <Route path="club-profile" element={<HostClubProfile />} />
+                  <Route path="recruitment" element={<HostRecruitment />} />
+                  <Route path="applicants" element={<HostApplicants />} />
+                  <Route path="registrations" element={<HostRegistrations />} />
+                  <Route path="tickets-certs" element={<HostTicketsCerts />} />
+                  <Route path="support" element={<HostSupport />} />
+                  <Route path="settings" element={<HostSettings />} />
+                </Route>
+              </Route>
+
+              {/* Student Protected Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['Student']} />}>
+                <Route path="/student" element={<StudentLayout />}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<StudentDashboard />} />
+                  <Route path="discover" element={<StudentDiscover />} />
+                  <Route path="clubs" element={<StudentClubs />} />
+                  <Route path="recruitments" element={<StudentRecruitments />} />
+                  <Route path="feedback" element={<StudentFeedback />} />
+                  <Route path="support" element={<StudentSupport />} />
+                  <Route path="settings" element={<StudentSettings />} />
+                </Route>
+              </Route>
+
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </HashRouter>
+        </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
   );

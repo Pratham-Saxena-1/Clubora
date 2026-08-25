@@ -1,10 +1,12 @@
+import { useAuth } from '../context/AuthContext';
 import { CalendarCheck, Download, Award, UserCheck, Send, QrCode } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
-import { currentStudent, studentRegisteredEvents, studentCertificates, studentApplications, studentStats } from '../data/mockData';
+import { studentRegisteredEvents, studentCertificates, studentApplications, studentStats } from '../data/mockData';
 import { useNavigate } from 'react-router-dom';
 
 function StudentDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleViewAllEvents = () => {
     navigate('/student/discover');
@@ -13,7 +15,7 @@ function StudentDashboard() {
   return (
     <div className="host-dashboard">
       <StudentPageHeader
-        title={`Welcome back, ${currentStudent.name.split(' ')[0]}`}
+        title={`Welcome back, ${user?.name?.split(' ')[0] || 'Student'}`}
         subtitle="Here is an overview of your campus activities, event registrations, and club engagements."
       />
 
