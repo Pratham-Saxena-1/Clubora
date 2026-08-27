@@ -19,6 +19,12 @@ const eventRegistrationSchema = new mongoose.Schema(
     qrTicket: {
       type: String, // uploaded manually by host for this specific registration
     },
+    answers: [
+      {
+        question: String,
+        answer: String,
+      },
+    ],
   },
   { timestamps: true }
 );

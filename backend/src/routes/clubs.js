@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getClubs, getClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember } = require('../controllers/clubController');
+const { getClubs, getClub, getMyClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember } = require('../controllers/clubController');
 const { authenticate, authorize, authorizeOwner } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const upload = require('../middleware/upload');
@@ -25,6 +25,7 @@ const isClubOwner = async (req) => {
   return club && club.hostId.toString() === req.user.id;
 };
 
+router.get('/my-club', authenticate, getMyClub);
 router.get('/', getClubs);
 router.get('/:id', getClub);
 router.post('/', authenticate, authorize('Host'), validate(clubSchema), createClub);
