@@ -27,6 +27,11 @@ const eventSchema = new mongoose.Schema(
     qrImage: {
       type: String, // generic qr for the event (if needed)
     },
+    questions: [
+      {
+        type: String,
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -1,20 +1,57 @@
-import { useState } from 'react';
-import { Plus, Camera, Pencil, Image as ImageIcon, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Camera, Pencil, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostModal from '../components/HostModal';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { clubInfo, teamMembers, pastEvents } from '../data/mockData';
+import api from '../api/axios';
+import { teamMembers, pastEvents } from '../data/mockData';
 
 function HostClubProfile() {
+  const [clubInfo, setClubInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [galleryEvent, setGalleryEvent] = useState(null);
   const [expandedPhoto, setExpandedPhoto] = useState(null);
   const [memberDetails, setMemberDetails] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoError, setPhotoError] = useState('');
+  
   const { addToast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchClub();
+  }, []);
+
+  const fetchClub = async () => {
+    try {
+      const { data } = await api.get('/clubs/my-club');
+      setClubInfo(data);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setClubInfo(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateClub = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData);
+    payload.categories = payload.categories ? [payload.categories] : [];
+
+    try {
+      const { data } = await api.post('/clubs', payload);
+      setClubInfo(data);
+      addToast('Club registered successfully!', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.error?.message || 'Error creating club', 'error');
+    }
+  };
 
   const handleAddMember = (e) => {
     e.preventDefault();
@@ -44,10 +81,6 @@ function HostClubProfile() {
     }
   };
 
-  const handleContactClick = (platform) => {
-    addToast(`Opening ${platform} in new tab...`, 'info');
-  };
-
   const openGallery = (evt) => {
     if (evt.images && evt.images.length > 0) {
       setGalleryEvent(evt);
@@ -74,6 +107,51 @@ function HostClubProfile() {
     );
   };
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+        <Loader2 className="spin" size={32} style={{ color: 'var(--primary)' }} />
+        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  // CREATE CLUB VIEW
+  if (!clubInfo) {
+    return (
+      <div className="host-club-profile">
+        <HostPageHeader
+          title="Register Your Club"
+          subtitle="Before you can publish events and vacancies, you must register your club details."
+        />
+        <section className="host-club-profile__card" style={{ maxWidth: '600px', margin: '32px auto' }}>
+          <form onSubmit={handleCreateClub} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="host-modal__field" style={{ marginBottom: 0 }}>
+              <label className="host-modal__label">Club Name</label>
+              <input name="name" type="text" className="host-modal__input" placeholder="e.g. University Chess Club" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: 0 }}>
+              <label className="host-modal__label">Description</label>
+              <textarea name="description" className="host-modal__textarea" placeholder="Describe the club's mission and purpose..." rows={4} required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: 0 }}>
+              <label className="host-modal__label">Category</label>
+              <input name="categories" type="text" className="host-modal__input" placeholder="e.g. Sports, Technical, Arts" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: 0 }}>
+              <label className="host-modal__label">Contact Number (Optional)</label>
+              <input name="contactNumber" type="tel" className="host-modal__input" placeholder="e.g. +1 555-0123" />
+            </div>
+            <button type="submit" className="host-modal__btn host-modal__btn--primary" style={{ marginTop: '16px' }}>
+              Register Club
+            </button>
+          </form>
+        </section>
+      </div>
+    );
+  }
+
+  // CLUB PROFILE VIEW
   return (
     <div className="host-club-profile">
       <HostPageHeader
@@ -90,8 +168,8 @@ function HostClubProfile() {
               <div className="hierarchy-tree">
                 <ul>
                   <li>
-                    <div className="hierarchy-tree__content hierarchy-tree__content--root" onClick={() => setMemberDetails(clubInfo.president)}>
-                      {clubInfo.president.name}
+                    <div className="hierarchy-tree__content hierarchy-tree__content--root" onClick={() => setMemberDetails({ name: clubInfo.hostId?.name || 'You', role: 'President' })}>
+                      {clubInfo.hostId?.name || 'You (President)'}
                     </div>
                     {renderTree(null)}
                   </li>
@@ -157,15 +235,11 @@ function HostClubProfile() {
         <div className="host-club-profile__sidebar">
           {/* About Us */}
           <section className="host-club-profile__card">
-            <h2 className="host-club-profile__card-title">About Us</h2>
+            <h2 className="host-club-profile__card-title">About {clubInfo.name}</h2>
             <p className="host-club-profile__about-text">{clubInfo.description}</p>
-            <div className="host-club-profile__mission">
-              <p className="host-club-profile__mission-label">Our Mission</p>
-              <blockquote className="host-club-profile__mission-quote">
-                &ldquo;{clubInfo.mission}&rdquo;
-              </blockquote>
-            </div>
-            <span className="host-club-profile__category-tag">{clubInfo.category}</span>
+            {clubInfo.categories && clubInfo.categories.length > 0 && (
+               <span className="host-club-profile__category-tag" style={{ marginTop: '16px', display: 'inline-block' }}>{clubInfo.categories[0]}</span>
+            )}
           </section>
 
           {/* Connect Contacts */}
@@ -174,27 +248,21 @@ function HostClubProfile() {
               <h2 className="host-club-profile__card-title">Connect Contacts</h2>
             </div>
             <div className="host-club-profile__contacts">
-              <a href={`mailto:${clubInfo.contacts.gmail}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer">
+              <a href={`mailto:contact@${clubInfo.name.replace(/\s+/g, '').toLowerCase()}.edu`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer">
                 <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                   <polyline points="22,6 12,13 2,6"></polyline>
                 </svg>
-                <span>Gmail</span>
+                <span>Email</span>
               </a>
-              <a href={`https://instagram.com/${clubInfo.contacts.instagram.replace('@', '')}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer">
-                <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                </svg>
-                <span>Instagram</span>
-              </a>
-              <a href="tel:+15551234567" className="host-club-profile__contact-tile">
-                <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
-                <span>Phone</span>
-              </a>
+              {clubInfo.contactNumber && (
+                <a href={`tel:${clubInfo.contactNumber}`} className="host-club-profile__contact-tile">
+                  <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  <span>Phone</span>
+                </a>
+              )}
             </div>
           </section>
         </div>
@@ -221,35 +289,6 @@ function HostClubProfile() {
             <div className="host-modal__field" style={{ marginBottom: '0' }}>
               <label className="host-modal__label">Designation / Role</label>
               <input type="text" className="host-modal__input" placeholder="e.g. Technical Lead" required />
-            </div>
-            <div className="host-modal__field" style={{ marginBottom: '0' }}>
-              <label className="host-modal__label">Registration Number</label>
-              <input type="text" className="host-modal__input" placeholder="e.g. REG-2024-045" required />
-            </div>
-            <div className="host-modal__field" style={{ marginBottom: '0' }}>
-              <label className="host-modal__label">Email ID</label>
-              <input type="email" className="host-modal__input" placeholder="e.g. email@university.edu" required />
-            </div>
-            <div className="host-modal__field" style={{ marginBottom: '0' }}>
-              <label className="host-modal__label">Date of Joining</label>
-              <input type="date" className="host-modal__input" required />
-            </div>
-            <div className="host-modal__field" style={{ marginBottom: '0' }}>
-              <label className="host-modal__label">Gender</label>
-              <select className="host-modal__input" required style={{ background: 'var(--bg-tertiary)' }}>
-                <option value="">Select Gender</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div className="host-modal__field" style={{ marginBottom: '0' }}>
-              <label className="host-modal__label">Contact Number</label>
-              <input type="tel" className="host-modal__input" placeholder="e.g. +1 555-0123" required />
-            </div>
-            <div className="host-modal__field" style={{ marginBottom: '0' }}>
-              <label className="host-modal__label">Hierarchy Level</label>
-              <input type="number" min="1" max="10" className="host-modal__input" placeholder="e.g. 2" required />
             </div>
           </div>
           <div className="host-modal__field" style={{ marginTop: 'var(--space-md)' }}>
@@ -339,14 +378,6 @@ function HostClubProfile() {
              </div>
              <h3 className="host-club-profile__member-name" style={{ textAlign: 'center', fontSize: 'var(--font-lg)' }}>{memberDetails.name}</h3>
              <span className="host-club-profile__role-tag" style={{ display: 'block', width: 'fit-content', margin: '0 auto var(--space-lg)' }}>{memberDetails.role}</span>
-             
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
-                <div><strong style={{ color: 'var(--text-secondary)' }}>Email:</strong> <p>{memberDetails.email}</p></div>
-                <div><strong style={{ color: 'var(--text-secondary)' }}>Reg Number:</strong> <p>{memberDetails.regNumber}</p></div>
-                <div><strong style={{ color: 'var(--text-secondary)' }}>Date of Joining:</strong> <p>{memberDetails.dateOfJoining || 'N/A'}</p></div>
-                <div><strong style={{ color: 'var(--text-secondary)' }}>Gender:</strong> <p>{memberDetails.gender || 'N/A'}</p></div>
-                <div><strong style={{ color: 'var(--text-secondary)' }}>Contact:</strong> <p>{memberDetails.contact || 'N/A'}</p></div>
-             </div>
           </div>
         )}
       </HostModal>

@@ -50,9 +50,11 @@ exports.updateEvent = async (req, res, next) => {
 
 exports.registerForEvent = async (req, res, next) => {
   try {
+    const { answers } = req.body;
     const registration = await EventRegistration.create({
       eventId: req.params.id,
-      studentId: req.user.id
+      studentId: req.user.id,
+      answers: Array.isArray(answers) ? answers : (answers ? JSON.parse(answers) : [])
     });
     res.status(201).json(registration);
   } catch (error) {

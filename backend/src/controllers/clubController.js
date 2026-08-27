@@ -33,6 +33,19 @@ exports.getClub = async (req, res, next) => {
   }
 };
 
+exports.getMyClub = async (req, res, next) => {
+  try {
+    const club = await Club.findOne({ hostId: req.user.id }).populate('hostId', 'name profilePic');
+    if (!club) {
+      return res.status(404).json({ error: { message: 'Club not found', code: 'NOT_FOUND' } });
+    }
+    const memberCount = await Membership.countDocuments({ clubId: club._id });
+    res.json({ ...club.toObject(), memberCount });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.createClub = async (req, res, next) => {
   try {
     const club = await Club.create({
