@@ -107,9 +107,40 @@ exports.uploadQrTicket = async (req, res, next) => {
   }
 };
 
+exports.uploadGalleryImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: { message: 'Please upload an image', code: 'BAD_REQUEST' } });
+    }
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ error: { message: 'Event not found' } });
+    
+    event.galleryImages.push(`/uploads/gallery/${req.file.filename}`);
+    await event.save();
+    res.json(event);
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getEventRegistrations = async (req, res, next) => {
   try {
     const registrations = await EventRegistration.find({ eventId: req.params.id }).populate('studentId', 'name email profilePic');
+    res.json(registrations);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getClubRegistrations = async (req, res, next) => {
+  try {
+    const club = await Club.findOne({ hostId: req.user.id });
+    if (!club) return res.json([]);
+    const events = await Event.find({ clubId: club._id });
+    const eventIds = events.map(e => e._id);
+    const registrations = await EventRegistration.find({ eventId: { $in: eventIds } })
+      .populate('studentId', 'name email regNumber')
+      .populate('eventId', 'title');
     res.json(registrations);
   } catch (error) {
     next(error);

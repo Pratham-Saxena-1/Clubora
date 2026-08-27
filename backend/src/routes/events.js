@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, checkInRegistration, uploadQrTicket, getEventRegistrations } = require('../controllers/eventController');
+const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, checkInRegistration, uploadQrTicket, getEventRegistrations, getClubRegistrations, uploadGalleryImage } = require('../controllers/eventController');
 const { authenticate, authorizeOwner, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
@@ -50,9 +50,11 @@ router.get('/', getEvents);
 router.get('/:id', getEvent);
 
 // Host Event Management
+router.get('/registrations/club', authenticate, authorize('Host'), getClubRegistrations);
 router.post('/', authenticate, authorize('Host'), authorizeOwner(isClubOwner), validate(eventSchema), createEvent);
 router.put('/:id', authenticate, authorizeOwner(isEventOwner), validate(updateEventSchema), updateEvent);
 router.get('/:id/registrations', authenticate, authorizeOwner(isEventOwner), getEventRegistrations);
+router.post('/:id/gallery', authenticate, authorizeOwner(isEventOwner), upload.single('galleryImage'), uploadGalleryImage);
 
 // Student Registration
 router.get('/registrations/student/me', authenticate, authorize('Student'), getMyRegistrations);

@@ -5,11 +5,13 @@ import HostModal from '../components/HostModal';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { teamMembers, pastEvents } from '../data/mockData';
+const teamMembers = [];
+const pastEvents = [];
 
 function HostClubProfile() {
   const [clubInfo, setClubInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pastEvents, setPastEvents] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [galleryEvent, setGalleryEvent] = useState(null);
@@ -29,6 +31,15 @@ function HostClubProfile() {
     try {
       const { data } = await api.get('/clubs/my-club');
       setClubInfo(data);
+      
+      const eventsRes = await api.get(`/events?clubId=${data._id}`);
+      const past = eventsRes.data.filter(e => new Date(e.date) < new Date());
+      setPastEvents(past.map(evt => ({
+        id: evt._id,
+        title: evt.title,
+        images: evt.galleryImages?.map(img => `http://localhost:5000${img}`) || []
+      })));
+      
     } catch (err) {
       if (err.response?.status === 404) {
         setClubInfo(null);
@@ -53,16 +64,24 @@ function HostClubProfile() {
     }
   };
 
-  const handleAddMember = (e) => {
+  const handleAddMember = async (e) => {
     e.preventDefault();
     if (photoError) {
       addToast('Please resolve photo errors before submitting.', 'error');
       return;
     }
-    setIsModalOpen(false);
-    setPhotoPreview(null);
-    setPhotoError('');
-    addToast('Team member added to hierarchy', 'success');
+    
+    const formData = new FormData(e.target);
+    try {
+      const { data } = await api.post(`/clubs/${clubInfo._id}/team-members`, formData);
+      setClubInfo(data);
+      setIsModalOpen(false);
+      setPhotoPreview(null);
+      setPhotoError('');
+      addToast('Team member added to hierarchy', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.error?.message || 'Failed to add member', 'error');
+    }
   };
 
   const handlePhotoChange = (e) => {
@@ -91,16 +110,21 @@ function HostClubProfile() {
   };
 
   const renderTree = (parentId = null) => {
-    const children = teamMembers.filter(m => m.parentId === parentId);
+    const children = (clubInfo.teamMembers || []).filter(m => {
+      if (parentId === null) {
+        return !m.parentId;
+      }
+      return m.parentId === parentId;
+    });
     if (!children.length) return null;
     return (
       <ul>
         {children.map(member => (
-          <li key={member.id}>
-            <div className="hierarchy-tree__content" onClick={() => setMemberDetails(member)}>
+          <li key={member._id}>
+            <div className="hierarchy-tree__content" onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
               {member.name}
             </div>
-            {renderTree(member.id)}
+            {renderTree(member._id)}
           </li>
         ))}
       </ul>
@@ -284,12 +308,21 @@ function HostClubProfile() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
             <div className="host-modal__field" style={{ marginBottom: '0' }}>
               <label className="host-modal__label">Full Name</label>
-              <input type="text" className="host-modal__input" placeholder="e.g. Jessica Wang" required />
+              <input type="text" name="name" className="host-modal__input" placeholder="e.g. Jessica Wang" required />
             </div>
             <div className="host-modal__field" style={{ marginBottom: '0' }}>
               <label className="host-modal__label">Designation / Role</label>
-              <input type="text" className="host-modal__input" placeholder="e.g. Technical Lead" required />
+              <input type="text" name="role" className="host-modal__input" placeholder="e.g. Technical Lead" required />
             </div>
+          </div>
+          <div className="host-modal__field" style={{ marginTop: 'var(--space-md)' }}>
+            <label className="host-modal__label">Reports To (Optional)</label>
+            <select name="parentId" className="host-modal__input">
+              <option value="">President (Top Level)</option>
+              {(clubInfo?.teamMembers || []).map(m => (
+                <option key={m._id} value={m._id}>{m.name} ({m.role})</option>
+              ))}
+            </select>
           </div>
           <div className="host-modal__field" style={{ marginTop: 'var(--space-md)' }}>
             <label className="host-modal__label">Photo Upload (JPEG/JPG only, Optional)</label>
@@ -302,6 +335,7 @@ function HostClubProfile() {
               <div style={{ flex: 1 }}>
                 <input 
                   type="file" 
+                  name="teamMemberPhoto"
                   className="host-modal__input" 
                   accept="image/jpeg, image/jpg"
                   onChange={handlePhotoChange}

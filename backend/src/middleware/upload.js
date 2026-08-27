@@ -8,6 +8,9 @@ const storage = multer.diskStorage({
     else if (file.fieldname === 'profilePic') dest += 'profile-pics/';
     else if (file.fieldname === 'resume') dest += 'resumes/';
     else if (file.fieldname === 'qrTicket') dest += 'event-qr/';
+    else if (file.fieldname === 'certificateFile') dest += 'certificates/';
+    else if (file.fieldname === 'teamMemberPhoto') dest += 'team-members/';
+    else if (file.fieldname === 'galleryImage') dest += 'gallery/';
     cb(null, dest);
   },
   filename: function (req, file, cb) {
@@ -22,6 +25,12 @@ const fileFilter = (req, file, cb) => {
       cb(null, true);
     } else {
       cb(new Error('Only PDF allowed for resume'), false);
+    }
+  } else if (file.fieldname === 'certificateFile') {
+    if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF or images allowed for certificates'), false);
     }
   } else {
     // Images

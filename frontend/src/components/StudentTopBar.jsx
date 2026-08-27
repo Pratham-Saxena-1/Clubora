@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Moon, Sun, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
-import { currentStudent, mockNotifications, studentRegisteredEvents } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 function StudentTopBar() {
   const { theme, toggleTheme } = useTheme();
@@ -11,6 +12,35 @@ function StudentTopBar() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { user } = useAuth();
+  
+  const [notifications, setNotifications] = useState([]);
+  const [studentRegisteredEvents, setStudentRegisteredEvents] = useState([]);
+  
+  useEffect(() => {
+    if (user?.id) {
+      api.get('/notifications/me').then(res => setNotifications(res.data)).catch(console.error);
+      api.get('/events/registrations/student/me').then(res => {
+        const events = res.data.map(reg => ({
+          id: reg._id,
+          title: reg.eventId?.title,
+          date: reg.eventId?.date ? new Date(reg.eventId.date).toISOString().split('T')[0] : null,
+          time: reg.eventId?.time,
+          location: reg.eventId?.venue
+        })).filter(e => e.date);
+        setStudentRegisteredEvents(events);
+      }).catch(console.error);
+    }
+  }, [user]);
+
+  const markAsRead = async (id) => {
+    try {
+      await api.put(`/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+    } catch (err) {
+      console.error(err);
+    }
+  };
   
   const notifRef = useRef(null);
   const calendarRef = useRef(null);
@@ -34,7 +64,7 @@ function StudentTopBar() {
     { id: 3, text: 'Entry passes are now available for AI & Machine Learning Workshop.', time: '1 day ago', read: true }
   ];
 
-  const unreadCount = studentUpdates.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <header className="host-topbar">
@@ -174,12 +204,13 @@ function StudentTopBar() {
                 Notifications
               </div>
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                {studentUpdates.map(n => (
-                  <div key={n.id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--bg-tertiary)' }}>
+                {notifications.map(n => (
+                  <div key={n._id} onClick={() => !n.read && markAsRead(n._id)} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--bg-tertiary)', cursor: n.read ? 'default' : 'pointer' }}>
                     <div style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)', marginBottom: '4px' }}>{n.text}</div>
-                    <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{n.time}</div>
+                    <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{new Date(n.createdAt).toLocaleString()}</div>
                   </div>
                 ))}
+                {notifications.length === 0 && <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-secondary)' }}>No notifications</div>}
               </div>
             </div>
           )}
@@ -191,9 +222,9 @@ function StudentTopBar() {
           style={{ cursor: 'pointer', border: 'none', background: 'var(--bg-tertiary)' }}
           aria-label="Go to settings"
         >
-          <div className="host-topbar__avatar">PS</div>
+          <div className="host-topbar__avatar">{user?.name ? user.name.substring(0,2).toUpperCase() : 'ST'}</div>
           <div className="host-topbar__user-info" style={{ textAlign: 'left' }}>
-            <span className="host-topbar__user-name">{currentStudent.name}</span>
+            <span className="host-topbar__user-name">{user?.name || 'Student'}</span>
             <span className="host-topbar__user-role">Student</span>
           </div>
         </button>

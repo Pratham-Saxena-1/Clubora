@@ -1,112 +1,123 @@
-import { useState, useMemo } from 'react';
-import { Upload, FileCheck, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Upload, CheckCircle2 } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
 import HostPagination from '../components/HostPagination';
 import { useToast } from '../context/ToastContext';
-import { ticketsData as initialTickets } from '../data/mockData';
+import api from '../api/axios';
 
 function HostTicketsCerts() {
   const [search, setSearch] = useState('');
   const [eventFilter, setEventFilter] = useState('All Events');
   const [currentPage, setCurrentPage] = useState(1);
-  const [tickets, setTickets] = useState(initialTickets);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
   const pageSize = 10;
 
-  // Extract unique events for filter dropdown
-  const uniqueEvents = useMemo(() => {
-    const events = new Set(tickets.map(t => t.registeredEvent));
-    return ['All Events', ...Array.from(events)];
-  }, [tickets]);
+  useEffect(() => {
+    fetchRegistrations();
+  }, []);
 
-  const filtered = tickets.filter((t) => {
-    const matchesSearch =
-      t.participant.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.participant.regNumber.toLowerCase().includes(search.toLowerCase());
-    const matchesEvent = eventFilter === 'All Events' || t.registeredEvent === eventFilter;
+  const fetchRegistrations = async () => {
+    try {
+      const { data } = await api.get('/events/registrations/club');
+      setRegistrations(data);
+    } catch (err) {
+      addToast('Failed to load tickets', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uniqueEvents = useMemo(() => {
+    const events = new Set(registrations.map(t => t.eventId?.title).filter(Boolean));
+    return ['All Events', ...Array.from(events)];
+  }, [registrations]);
+
+  const filtered = registrations.filter((t) => {
+    const studentName = (t.studentId?.name || '').toLowerCase();
+    const regNumber = (t.studentId?.regNumber || '').toLowerCase();
+    const eventName = t.eventId?.title || 'Unknown';
+
+    const matchesSearch = studentName.includes(search.toLowerCase()) || regNumber.includes(search.toLowerCase());
+    const matchesEvent = eventFilter === 'All Events' || eventName === eventFilter;
     return matchesSearch && matchesEvent;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const handleIssueQR = (id, name) => {
-    setTickets(prev => prev.map(t => t.id === id ? { ...t, qrPass: { issued: true } } : t));
-    addToast(`QR Entry Pass issued for ${name}`, 'success');
+  const handleIssueQR = async (e, id, name) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('qrTicket', file);
+
+    try {
+      const { data } = await api.post(`/events/registrations/${id}/qr-ticket`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setRegistrations(prev => prev.map(t => t._id === id ? { ...t, qrTicket: data.qrTicket } : t));
+      addToast(`QR Entry Pass issued for ${name}`, 'success');
+    } catch (err) {
+      addToast(`Failed to issue QR for ${name}`, 'error');
+    }
   };
 
-  const handleIssueCert = (id, name) => {
-    setTickets(prev => prev.map(t => t.id === id ? { ...t, certificate: { issued: true } } : t));
-    addToast(`Certificate issued for ${name}`, 'success');
-  };
+  const columns = ['Participant', 'Event', 'QR Entry Pass'];
 
-  const columns = ['Participant', 'Event', 'QR Entry Pass', 'Certificate'];
+  const renderRow = (ticket) => {
+    const student = ticket.studentId || {};
+    const eventName = ticket.eventId?.title || 'Unknown';
 
-  const renderRow = (ticket) => (
-    <tr key={ticket.id}>
-      <td>
-        <div className="host-data-table__participant">
-          <div className="host-data-table__participant-avatar">{ticket.participant.initials}</div>
-          <div className="host-data-table__participant-info">
-            <span className="host-data-table__participant-name">{ticket.participant.name}</span>
-            <span className="host-data-table__participant-email">{ticket.participant.email}</span>
-            <span className="host-data-table__participant-email">{ticket.participant.regNumber}</span>
+    return (
+      <tr key={ticket._id}>
+        <td>
+          <div className="host-data-table__participant">
+            <div className="host-data-table__participant-avatar">{student.name ? student.name.substring(0, 2).toUpperCase() : 'ST'}</div>
+            <div className="host-data-table__participant-info">
+              <span className="host-data-table__participant-name">{student.name || 'Unknown'}</span>
+              <span className="host-data-table__participant-email">{student.email || 'N/A'}</span>
+              <span className="host-data-table__participant-email">{student.regNumber || 'N/A'}</span>
+            </div>
           </div>
-        </div>
-      </td>
-      <td className="host-tickets__event-name">{ticket.registeredEvent}</td>
-      <td>
-        <div className="host-tickets__status-cell">
-          {ticket.qrPass.issued ? (
-            <span className="host-data-table__status-badge host-data-table__status-badge--issued">
-              <CheckCircle2 size={12} strokeWidth={2.5} />
-              Issued
-            </span>
-          ) : (
-            <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
-              <input 
-                type="file" 
-                accept="image/*,.pdf" 
-                style={{ display: 'none' }} 
-                onChange={() => handleIssueQR(ticket.id, ticket.participant.name)} 
-              />
-              <Upload size={14} strokeWidth={2} />
-              Issue QR
-            </label>
-          )}
-        </div>
-      </td>
-      <td>
-        <div className="host-tickets__status-cell">
-          {ticket.certificate.issued ? (
-            <span className="host-data-table__status-badge host-data-table__status-badge--issued">
-              <FileCheck size={12} strokeWidth={2.5} />
-              Issued
-            </span>
-          ) : (
-            <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
-              <input 
-                type="file" 
-                accept="image/*,.pdf" 
-                style={{ display: 'none' }} 
-                onChange={() => handleIssueCert(ticket.id, ticket.participant.name)} 
-              />
-              <Upload size={14} strokeWidth={2} />
-              Issue Cert
-            </label>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
+        </td>
+        <td className="host-tickets__event-name">{eventName}</td>
+        <td>
+          <div className="host-tickets__status-cell">
+            {ticket.qrTicket ? (
+              <a href={`http://localhost:5000${ticket.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
+                  <CheckCircle2 size={12} strokeWidth={2.5} />
+                  View Issued Pass
+                </span>
+              </a>
+            ) : (
+              <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
+                <input 
+                  type="file" 
+                  accept="image/*,.pdf" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleIssueQR(e, ticket._id, student.name)} 
+                />
+                <Upload size={14} strokeWidth={2} />
+                Upload QR
+              </label>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <div className="host-tickets">
       <HostPageHeader
-        title="Tickets & Certificates"
-        subtitle="Issue QR entry passes for upcoming events and distribute completion certificates."
+        title="Tickets & Entry Passes"
+        subtitle="Upload and issue QR entry passes for your upcoming events."
       />
 
       <div className="host-tickets__controls">
@@ -128,20 +139,25 @@ function HostTicketsCerts() {
         </select>
       </div>
 
-      <HostDataTable
-        columns={columns}
-        data={paged}
-        emptyMessage="No ticket records match your criteria."
-        renderRow={renderRow}
-      />
-
-      <HostPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalEntries={filtered.length}
-        pageSize={pageSize}
-        onPageChange={setCurrentPage}
-      />
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading tickets...</div>
+      ) : (
+        <>
+          <HostDataTable
+            columns={columns}
+            data={paged}
+            emptyMessage="No ticket records match your criteria."
+            renderRow={renderRow}
+          />
+          <HostPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalEntries={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
     </div>
   );
 }

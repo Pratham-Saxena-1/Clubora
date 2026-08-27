@@ -1,53 +1,64 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MessageSquarePlus, MessageCircle, Send } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import { useToast } from '../context/ToastContext';
-import { supportCategories, supportTickets as initialTickets } from '../data/mockData';
+import api from '../api/axios';
+
+const supportCategories = ['All', 'Support', 'Feedback'];
 
 function HostSupport() {
   const [activeCategory, setActiveCategory] = useState('All');
-  const [tickets, setTickets] = useState(initialTickets);
+  const [tickets, setTickets] = useState([]);
   const [activeTicketId, setActiveTicketId] = useState(null);
   const [replyText, setReplyText] = useState('');
+  const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const fetchTickets = async () => {
+    try {
+      const { data } = await api.get('/support/all');
+      setTickets(data);
+    } catch (err) {
+      addToast('Failed to load tickets', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTickets = useMemo(() => {
     if (activeCategory === 'All') return tickets;
-    return tickets.filter(t => t.category === activeCategory);
+    return tickets.filter(t => t.type === activeCategory);
   }, [tickets, activeCategory]);
 
-  const activeTicket = tickets.find(t => t.id === activeTicketId);
+  const activeTicket = tickets.find(t => t._id === activeTicketId);
 
-  const handleReply = (e) => {
+  const handleReply = async (e) => {
     e.preventDefault();
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || !activeTicketId) return;
 
-    setTickets(prev => prev.map(t => {
-      if (t.id === activeTicketId) {
-        return {
-          ...t,
-          messages: [
-            ...t.messages,
-            {
-              id: Date.now(),
-              sender: 'Alex Chen', // Assuming host's name
-              role: 'host',
-              text: replyText.trim(),
-              timestamp: new Date().toISOString()
-            }
-          ]
-        };
-      }
-      return t;
-    }));
-    setReplyText('');
-    addToast('Reply sent successfully', 'success');
+    try {
+      const { data } = await api.post(`/support/${activeTicketId}/reply`, { text: replyText.trim() });
+      setTickets(prev => prev.map(t => t._id === activeTicketId ? data : t));
+      setReplyText('');
+      addToast('Reply sent successfully', 'success');
+    } catch (err) {
+      addToast('Failed to send reply', 'error');
+    }
   };
 
-  const handleResolve = () => {
+  const handleResolve = async () => {
     if (!activeTicket) return;
-    setTickets(prev => prev.map(t => t.id === activeTicketId ? { ...t, status: 'Resolved' } : t));
-    addToast(`Ticket "${activeTicket.subject}" resolved`, 'info');
+    try {
+      const { data } = await api.put(`/support/${activeTicketId}/resolve`);
+      setTickets(prev => prev.map(t => t._id === activeTicketId ? data : t));
+      addToast(`Ticket "${activeTicket.subject}" resolved`, 'info');
+    } catch (err) {
+      addToast('Failed to resolve ticket', 'error');
+    }
   };
 
   return (
@@ -96,29 +107,31 @@ function HostSupport() {
           </div>
           
           <div style={{ flex: 1, overflowY: 'auto' }}>
-            {filteredTickets.length > 0 ? (
+            {loading ? (
+              <div style={{ padding: 'var(--space-2xl) var(--space-lg)', textAlign: 'center', color: 'var(--text-tertiary)' }}>Loading...</div>
+            ) : filteredTickets.length > 0 ? (
               filteredTickets.map(ticket => (
                 <div 
-                  key={ticket.id} 
+                  key={ticket._id} 
                   style={{
                     padding: 'var(--space-md) var(--space-lg)',
                     borderBottom: '1px solid var(--border)',
                     cursor: 'pointer',
                     transition: 'all var(--transition-fast)',
-                    background: activeTicketId === ticket.id ? 'var(--accent-soft)' : 'transparent',
-                    borderLeft: activeTicketId === ticket.id ? '3px solid var(--primary)' : '3px solid transparent'
+                    background: activeTicketId === ticket._id ? 'var(--accent-soft)' : 'transparent',
+                    borderLeft: activeTicketId === ticket._id ? '3px solid var(--primary)' : '3px solid transparent'
                   }}
-                  onClick={() => setActiveTicketId(ticket.id)}
+                  onClick={() => setActiveTicketId(ticket._id)}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
                     <h4 style={{ fontSize: 'var(--font-sm)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{ticket.subject}</h4>
                     {ticket.status === 'Open' && <span style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', flexShrink: 0, marginTop: '4px' }}></span>}
                   </div>
                   <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)', marginBottom: '8px' }}>
-                    {ticket.student.name} · {new Date(ticket.createdAt).toLocaleDateString()}
+                    {ticket.userId?.name || 'Unknown'} · {new Date(ticket.createdAt).toLocaleDateString()}
                   </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ padding: '2px 8px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', fontSize: '10px', color: 'var(--text-secondary)' }}>{ticket.category}</span>
+                    <span style={{ padding: '2px 8px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', fontSize: '10px', color: 'var(--text-secondary)' }}>{ticket.type}</span>
                     {ticket.status === 'Resolved' && (
                       <span style={{ padding: '2px 8px', background: 'var(--success-soft)', borderRadius: 'var(--radius-sm)', fontSize: '10px', color: 'var(--success)' }}>Resolved</span>
                     )}
@@ -141,7 +154,7 @@ function HostSupport() {
               <div style={{ padding: 'var(--space-md) var(--space-lg)', borderBottom: '1px solid var(--border)', background: 'var(--bg-tertiary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h3 style={{ fontSize: 'var(--font-base)', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>{activeTicket.subject}</h3>
-                  <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>Ticket ID: #{activeTicket.id}</span>
+                  <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-secondary)' }}>Ticket ID: #{activeTicket._id.substring(0, 8)}</span>
                 </div>
                 {activeTicket.status === 'Open' && (
                   <button onClick={handleResolve} style={{ padding: '6px 12px', background: 'var(--success-soft)', color: 'var(--success)', border: 'none', borderRadius: 'var(--radius-full)', fontSize: 'var(--font-xs)', fontWeight: 600, cursor: 'pointer' }}>
@@ -151,8 +164,34 @@ function HostSupport() {
               </div>
               
               <div style={{ flex: 1, overflowY: 'auto', padding: 'var(--space-xl)', display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-                {activeTicket.messages.map(msg => (
-                  <div key={msg.id} style={{
+                
+                {/* Initial Description */}
+                {activeTicket.description && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignSelf: 'flex-start',
+                    maxWidth: '80%'
+                  }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginBottom: '4px', marginLeft: '12px' }}>
+                      {activeTicket.userId?.name || 'Unknown'} • {new Date(activeTicket.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <div style={{
+                      padding: '12px 16px',
+                      borderRadius: '16px',
+                      background: 'var(--bg-tertiary)',
+                      color: 'var(--text-primary)',
+                      borderBottomLeftRadius: '4px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                    }}>
+                      <p style={{ margin: 0, fontSize: 'var(--font-sm)', lineHeight: 1.5 }}>{activeTicket.description}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Messages */}
+                {activeTicket.messages?.map(msg => (
+                  <div key={msg._id} style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignSelf: msg.role === 'host' ? 'flex-end' : 'flex-start',
@@ -218,15 +257,15 @@ function HostSupport() {
           {activeTicket ? (
             <div style={{ padding: 'var(--space-xl) var(--space-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-full)', background: 'linear-gradient(135deg, var(--accent), var(--secondary))', color: '#fff', fontSize: 'var(--font-2xl)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-md)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}>
-                {activeTicket.student.name.split(' ').map(n => n[0]).join('')}
+                {activeTicket.userId?.name ? activeTicket.userId.name.substring(0, 2).toUpperCase() : 'ST'}
               </div>
-              <h4 style={{ fontSize: 'var(--font-lg)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', textAlign: 'center' }}>{activeTicket.student.name}</h4>
-              <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)', textAlign: 'center' }}>{activeTicket.student.regNumber}</p>
+              <h4 style={{ fontSize: 'var(--font-lg)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', textAlign: 'center' }}>{activeTicket.userId?.name || 'Unknown'}</h4>
+              <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)', textAlign: 'center' }}>{activeTicket.userId?.regNumber || 'N/A'}</p>
               
               <div style={{ width: '100%', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)' }}>
                 <div style={{ marginBottom: '12px' }}>
                   <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '4px' }}>Email Address</span>
-                  <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)' }}>{activeTicket.student.email}</span>
+                  <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)' }}>{activeTicket.userId?.email || 'N/A'}</span>
                 </div>
                 <div>
                   <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '4px' }}>Ticket Created</span>

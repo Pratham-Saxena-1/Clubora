@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getClubs, getClub, getMyClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember } = require('../controllers/clubController');
+const { getClubs, getClub, getMyClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember, addTeamMember } = require('../controllers/clubController');
 const { authenticate, authorize, authorizeOwner } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const upload = require('../middleware/upload');
@@ -13,6 +13,7 @@ const clubSchema = z.object({
   description: z.string().optional(),
   categories: z.array(z.string()).optional(),
   contactNumber: z.string().optional(),
+  establishedYear: z.number().optional(),
 });
 
 const memberSchema = z.object({
@@ -31,6 +32,7 @@ router.get('/:id', getClub);
 router.post('/', authenticate, authorize('Host'), validate(clubSchema), createClub);
 router.put('/:id', authenticate, authorizeOwner(isClubOwner), validate(clubSchema), updateClub);
 router.post('/:id/logo', authenticate, authorizeOwner(isClubOwner), upload.single('logo'), uploadLogo);
+router.post('/:id/team-members', authenticate, authorizeOwner(isClubOwner), upload.single('teamMemberPhoto'), addTeamMember);
 router.get('/:id/members', authenticate, getMembers);
 router.post('/:id/members', authenticate, authorizeOwner(isClubOwner), validate(memberSchema), addMember);
 router.delete('/:id/members/:userId', authenticate, authorizeOwner(isClubOwner), removeMember);

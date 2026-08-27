@@ -1,37 +1,56 @@
-import { useState } from 'react';
-import { FileText, Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { FileText, Download, CheckCircle, Clock } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import HostModal from '../components/HostModal';
 import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
 import HostPagination from '../components/HostPagination';
 import { useToast } from '../context/ToastContext';
-import { registrationsData as initialRegs } from '../data/mockData';
+import api from '../api/axios';
 
 function HostRegistrations() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [registrations, setRegistrations] = useState(initialRegs);
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
   const pageSize = 10;
 
   const [eventFilter, setEventFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
-  const [paymentModalData, setPaymentModalData] = useState(null);
+  const [modalData, setModalData] = useState(null);
   
-  const events = [...new Set(initialRegs.map(r => r.eventName))];
-  const dates = [...new Set(initialRegs.map(r => r.registrationDate))];
+  useEffect(() => {
+    fetchRegistrations();
+  }, []);
+
+  const fetchRegistrations = async () => {
+    try {
+      const { data } = await api.get('/events/registrations/club');
+      setRegistrations(data);
+    } catch (err) {
+      addToast('Failed to load registrations', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const events = [...new Set(registrations.map(r => r.eventId?.title))].filter(Boolean);
+  const dates = [...new Set(registrations.map(r => new Date(r.createdAt).toLocaleDateString()))];
 
   const filtered = registrations.filter(
-    (r) =>
-      (r.participant.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.eventName.toLowerCase().includes(search.toLowerCase()) ||
-      r.participant.regNumber.toLowerCase().includes(search.toLowerCase())) &&
-      (eventFilter === '' || r.eventName === eventFilter) &&
-      (dateFilter === '' || r.registrationDate === dateFilter)
+    (r) => {
+      const studentName = (r.studentId?.name || '').toLowerCase();
+      const eventName = (r.eventId?.title || '').toLowerCase();
+      const regDate = new Date(r.createdAt).toLocaleDateString();
+      
+      return (
+        (studentName.includes(search.toLowerCase()) || eventName.includes(search.toLowerCase())) &&
+        (eventFilter === '' || r.eventId?.title === eventFilter) &&
+        (dateFilter === '' || regDate === dateFilter)
+      );
+    }
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -39,12 +58,11 @@ function HostRegistrations() {
 
   const exportToExcel = () => {
     const exportData = registrations.map(r => ({
-      'Participant Name': r.participant.name,
-      'Email': r.participant.email,
-      'Reg Number': r.participant.regNumber,
-      'Event Name': r.eventName,
-      'Registration Date': r.registrationDate,
-      'Registration Time': r.registrationTime
+      'Participant Name': r.studentId?.name || 'Unknown',
+      'Email': r.studentId?.email || 'N/A',
+      'Event Name': r.eventId?.title || 'Unknown',
+      'Registration Date': new Date(r.createdAt).toLocaleDateString(),
+      'Checked In': r.checkedIn ? 'Yes' : 'No'
     }));
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -53,75 +71,66 @@ function HostRegistrations() {
     addToast('Excel file downloaded', 'success');
   };
 
-  const exportToWord = () => {
-    const tableHTML = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><title>Clubora Registrations Report</title></head><body>
-      <h1>Clubora Registrations Report</h1>
-      <table border="1">
-        <tr><th>Participant</th><th>Reg Number</th><th>Event</th><th>Date</th><th>Time</th></tr>
-        ${registrations.map(r => `<tr><td>${r.participant.name}</td><td>${r.participant.regNumber}</td><td>${r.eventName}</td><td>${r.registrationDate}</td><td>${r.registrationTime}</td></tr>`).join('')}
-      </table>
-      </body></html>
-    `;
-    const blob = new Blob(['\ufeff', tableHTML], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'clubora_registrations.doc';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast('MS Word report downloaded', 'success');
-  };
-
-  const handleVerifyPayment = () => {
-    if (paymentModalData) {
-      setRegistrations(prev => prev.map(r => r.id === paymentModalData.id ? { ...r, paymentVerified: true } : r));
-      addToast(`Payment verified for ${paymentModalData.participant.name}`, 'success');
-      setPaymentModalData(null);
+  const handleCheckIn = async (id) => {
+    try {
+      await api.put(`/events/registrations/${id}/check-in`);
+      setRegistrations(prev => prev.map(r => r._id === id ? { ...r, checkedIn: true } : r));
+      addToast('Participant checked in successfully!', 'success');
+      setModalData(null);
+    } catch (err) {
+      addToast('Failed to check in participant', 'error');
     }
   };
 
-  const columns = ['Participant', 'Event Name', 'Registration Date', 'Payment'];
+  const columns = ['Participant', 'Event Name', 'Registration Date', 'Status'];
 
-  const renderRow = (reg) => (
-    <tr key={reg.id}>
-      <td>
-        <div className="host-data-table__participant">
-          <div className="host-data-table__participant-avatar">{reg.participant.initials}</div>
-          <div className="host-data-table__participant-info">
-            <span className="host-data-table__participant-name">{reg.participant.name}</span>
-            <span className="host-data-table__participant-email">{reg.participant.email}</span>
-            <span className="host-data-table__participant-email">{reg.participant.regNumber}</span>
+  const renderRow = (reg) => {
+    const student = reg.studentId || {};
+    const eventName = reg.eventId?.title || 'Unknown';
+    const regDate = new Date(reg.createdAt).toLocaleDateString();
+    
+    return (
+      <tr key={reg._id}>
+        <td>
+          <div className="host-data-table__participant">
+            <div className="host-data-table__participant-avatar">{student.name ? student.name.substring(0, 2).toUpperCase() : 'ST'}</div>
+            <div className="host-data-table__participant-info">
+              <span className="host-data-table__participant-name">{student.name || 'Unknown'}</span>
+              <span className="host-data-table__participant-email">{student.email || 'N/A'}</span>
+            </div>
           </div>
-        </div>
-      </td>
-      <td className="host-registrations__event-name">{reg.eventName}</td>
-      <td className="host-registrations__date">
-        {reg.registrationDate} · {reg.registrationTime}
-      </td>
-      <td>
-        <button 
-          className={`host-registrations__verify-btn ${reg.paymentVerified ? 'host-registrations__verify-btn--verified' : ''}`}
-          onClick={() => !reg.paymentVerified && setPaymentModalData(reg)}
-        >
-          {reg.paymentVerified ? 'Verified' : 'View Payment'}
-        </button>
-      </td>
-    </tr>
-  );
+        </td>
+        <td className="host-registrations__event-name">{eventName}</td>
+        <td className="host-registrations__date">{regDate}</td>
+        <td>
+          {reg.checkedIn ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontSize: '13px', fontWeight: 600 }}>
+              <CheckCircle size={16} /> Checked In
+            </span>
+          ) : (
+            <button 
+              className="host-modal__btn host-modal__btn--primary" 
+              style={{ padding: '6px 12px', fontSize: '12px' }}
+              onClick={() => setModalData(reg)}
+            >
+              Check In
+            </button>
+          )}
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <div className="host-registrations">
       <HostPageHeader
         title="Registration Ledger"
-        subtitle="Search, track, and export student registrations and transaction records."
+        subtitle="Search, track, and manage student event registrations and check-ins."
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
         <HostSearchBar
-          placeholder="Search registrations, events, or students…"
+          placeholder="Search registrations or events…"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           id="registrations-search"
@@ -143,50 +152,62 @@ function HostRegistrations() {
             <option value="">All Dates</option>
             {dates.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          <button onClick={exportToWord} className="host-modal__btn host-modal__btn--secondary" style={{ padding: '8px 16px' }}>
-            <FileText size={16} /> Word
-          </button>
           <button onClick={exportToExcel} className="host-modal__btn host-modal__btn--secondary" style={{ padding: '8px 16px' }}>
-            <Download size={16} /> Excel
+            <Download size={16} /> Export Excel
           </button>
         </div>
       </div>
 
-      <HostDataTable
-        columns={columns}
-        data={paged}
-        emptyMessage="No registration records match your search terms."
-        renderRow={renderRow}
-      />
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading registrations...</div>
+      ) : (
+        <>
+          <HostDataTable
+            columns={columns}
+            data={paged}
+            emptyMessage="No registration records match your search terms."
+            renderRow={renderRow}
+          />
+          <HostPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalEntries={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
 
-      <HostPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalEntries={filtered.length}
-        pageSize={pageSize}
-        onPageChange={setCurrentPage}
-      />
-
-      {/* Payment Verification Modal */}
+      {/* Check-In Modal */}
       <HostModal
-        isOpen={!!paymentModalData}
-        onClose={() => setPaymentModalData(null)}
-        title={`Payment Details: ${paymentModalData?.participant?.name}`}
+        isOpen={!!modalData}
+        onClose={() => setModalData(null)}
+        title={`Check In Participant`}
         footer={
           <>
-            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setPaymentModalData(null)}>Cancel</button>
-            <button type="button" className="host-modal__btn host-modal__btn--primary" style={{ background: 'var(--success)', color: 'var(--bg-primary)' }} onClick={handleVerifyPayment}>Verify Payment</button>
+            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setModalData(null)}>Cancel</button>
+            <button type="button" className="host-modal__btn host-modal__btn--primary" style={{ background: 'var(--success)', color: 'var(--bg-primary)' }} onClick={() => handleCheckIn(modalData._id)}>Confirm Check-In</button>
           </>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', alignItems: 'center' }}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-sm)' }}>
-            Please verify the transaction screenshot uploaded by the participant.
-          </p>
-          <div style={{ width: '100%', height: '300px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}>
-             <span style={{ color: 'var(--text-tertiary)' }}>Dummy Screenshot of Transaction ID: #TXN-{paymentModalData?.id}9827</span>
+        {modalData && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+              You are about to check in <strong>{modalData.studentId?.name}</strong> for the event <strong>{modalData.eventId?.title}</strong>.
+            </p>
+            {modalData.answers && modalData.answers.length > 0 && (
+              <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                <h4 style={{ marginBottom: '12px', fontSize: '14px', color: 'var(--text-primary)' }}>Participant Details</h4>
+                {modalData.answers.map((ans, idx) => (
+                  <div key={idx} style={{ marginBottom: '8px' }}>
+                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>{ans.question}</span>
+                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{ans.answer}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </HostModal>
     </div>
   );

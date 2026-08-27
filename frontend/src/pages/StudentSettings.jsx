@@ -1,37 +1,79 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, Save } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
 import { useToast } from '../context/ToastContext';
-import { currentStudent } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 function StudentSettings() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
-    name: currentStudent.name,
-    email: currentStudent.email,
+    name: '',
+    email: '',
     password: '',
-    regNumber: currentStudent.regNumber,
-    branch: currentStudent.branch,
+    regNumber: '',
+    branch: '',
   });
   
   const [photoName, setPhotoName] = useState('Recommended: 200x200px JPG or PNG');
   const fileInputRef = useRef(null);
-  
   const { addToast } = useToast();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await api.get(`/users/${user.id}`);
+        setFormData(prev => ({
+          ...prev,
+          name: data.name || '',
+          email: data.email || '',
+          regNumber: data.settings?.regNumber || '',
+          branch: data.settings?.branch || '',
+        }));
+      } catch (err) {
+        addToast('Failed to load profile data', 'error');
+      }
+    };
+    if (user?.id) fetchProfile();
+  }, [user, addToast]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
-      setPhotoName(e.target.files[0].name);
-      addToast('Profile photo selected successfully!', 'success');
+      const file = e.target.files[0];
+      setPhotoName(file.name);
+      
+      const formData = new FormData();
+      formData.append('profilePic', file);
+      
+      try {
+        await api.post(`/users/${user.id}/profile-pic`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        addToast('Profile photo updated successfully!', 'success');
+      } catch (err) {
+        addToast('Failed to update photo', 'error');
+      }
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    addToast('Student profile settings saved successfully!', 'success');
+    try {
+      await api.put(`/users/${user.id}`, {
+        name: formData.name,
+        settings: {
+          regNumber: formData.regNumber,
+          branch: formData.branch,
+        }
+      });
+      addToast('Student profile settings saved successfully!', 'success');
+    } catch (err) {
+      addToast('Failed to save settings', 'error');
+    }
   };
 
   return (
@@ -47,7 +89,7 @@ function StudentSettings() {
           
           <div className="host-settings__photo-section">
             <div className="host-settings__photo-preview">
-              <span className="host-settings__photo-initials">PS</span>
+              <span className="host-settings__photo-initials">{formData.name ? formData.name.substring(0, 2).toUpperCase() : 'ST'}</span>
             </div>
             <div className="host-settings__photo-info">
               <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
@@ -70,12 +112,13 @@ function StudentSettings() {
               />
             </div>
             <div className="host-settings__field">
-              <label className="host-settings__label">Email Address</label>
+              <label className="host-settings__label">Email Address (Read-only)</label>
               <input 
                 type="email" 
                 className="host-settings__input" 
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                readOnly
+                style={{ opacity: 0.7 }}
               />
             </div>
             <div className="host-settings__field">
@@ -94,16 +137,6 @@ function StudentSettings() {
                 className="host-settings__input" 
                 value={formData.branch} 
                 onChange={(e) => setFormData({...formData, branch: e.target.value})} 
-              />
-            </div>
-            <div className="host-settings__field">
-              <label className="host-settings__label">Change Password</label>
-              <input 
-                type="password" 
-                className="host-settings__input" 
-                placeholder="Leave blank to keep current password" 
-                value={formData.password} 
-                onChange={(e) => setFormData({...formData, password: e.target.value})} 
               />
             </div>
           </div>

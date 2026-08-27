@@ -1,50 +1,75 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, Check, X, FileText, Download, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import HostModal from '../components/HostModal';
 import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
 import HostPagination from '../components/HostPagination';
 import { useToast } from '../context/ToastContext';
-import { applicantsData as initialApplicants } from '../data/mockData';
+import api from '../api/axios';
 
 function HostApplicants() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [applicants, setApplicants] = useState(initialApplicants);
+  const [applicants, setApplicants] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { addToast } = useToast();
   const pageSize = 10;
 
-  const [interviewApplicant, setInterviewApplicant] = useState(null);
   const [roleFilter, setRoleFilter] = useState('');
+  const [resumeModal, setResumeModal] = useState(null);
+  const [answersModal, setAnswersModal] = useState(null);
   
-  const roles = [...new Set(initialApplicants.map(a => a.appliedRole))];
+  useEffect(() => {
+    fetchApplicants();
+  }, []);
+
+  const fetchApplicants = async () => {
+    try {
+      const { data } = await api.get('/applications/club');
+      setApplicants(data);
+    } catch (err) {
+      addToast('Failed to load applicants', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const roles = [...new Set(applicants.map(a => a.recruitmentId?.title))].filter(Boolean);
 
   const filtered = applicants.filter(
-    (a) =>
-      (a.name.toLowerCase().includes(search.toLowerCase()) ||
-      a.regNumber.toLowerCase().includes(search.toLowerCase()) ||
-      a.appliedRole.toLowerCase().includes(search.toLowerCase())) &&
-      (roleFilter === '' || a.appliedRole === roleFilter)
+    (a) => {
+      const studentName = (a.studentId?.name || '').toLowerCase();
+      const roleName = (a.recruitmentId?.title || '').toLowerCase();
+      
+      return (
+        (studentName.includes(search.toLowerCase()) || roleName.includes(search.toLowerCase())) &&
+        (roleFilter === '' || a.recruitmentId?.title === roleFilter)
+      );
+    }
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const handleStatusChange = (id, newStatus, name) => {
-    setApplicants(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
-    addToast(`${name} has been ${newStatus}.`, newStatus === 'accepted' ? 'success' : 'info');
+  const handleStatusChange = async (id, newStatus, name) => {
+    try {
+      await api.put(`/applications/${id}/status`, { status: newStatus });
+      setApplicants(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a));
+      addToast(`${name} has been ${newStatus}.`, newStatus === 'Accepted' ? 'success' : 'info');
+    } catch (err) {
+      addToast('Failed to update status', 'error');
+    }
   };
   
   const exportToExcel = () => {
     const exportData = applicants.map(a => ({
-      Name: a.name,
-      'Registration Number': a.regNumber,
-      Role: a.appliedRole,
-      'Submission Date': a.submissionDate,
+      Name: a.studentId?.name || 'Unknown',
+      'Contact Number': a.studentId?.contactNumber || 'N/A',
+      Email: a.studentId?.email || 'N/A',
+      Role: a.recruitmentId?.title || 'Unknown',
+      'Submission Date': new Date(a.createdAt).toLocaleDateString(),
       Status: a.status
     }));
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -54,106 +79,93 @@ function HostApplicants() {
     addToast('Excel file downloaded', 'success');
   };
 
-  const exportToWord = () => {
-    const tableHTML = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><title>Clubora Applicants Report</title></head><body>
-      <h1>Clubora Applicants Report</h1>
-      <table border="1">
-        <tr><th>Name</th><th>Reg Number</th><th>Role</th><th>Date</th><th>Status</th></tr>
-        ${applicants.map(a => `<tr><td>${a.name}</td><td>${a.regNumber}</td><td>${a.appliedRole}</td><td>${a.submissionDate}</td><td>${a.status}</td></tr>`).join('')}
-      </table>
-      </body></html>
-    `;
-    const blob = new Blob(['\ufeff', tableHTML], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'clubora_applicants.doc';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    addToast('MS Word report downloaded', 'success');
-  };
+  const columns = ['Applicant', 'Applied Role', 'Submission Date', 'Status', 'Actions'];
 
-  const handleScheduleInterview = (e) => {
-    e.preventDefault();
-    if (interviewApplicant) {
-      addToast(`Interview scheduled for ${interviewApplicant.name}.`, 'success');
-      setInterviewApplicant(null);
-    }
-  };
+  const renderRow = (applicant) => {
+    const student = applicant.studentId || {};
+    const roleTitle = applicant.recruitmentId?.title || 'Unknown';
+    const subDate = new Date(applicant.createdAt).toLocaleDateString();
 
-  const columns = ['Applicant', 'Registration Number', 'Applied Role', 'Submission Date', 'Status', 'Actions'];
-
-  const renderRow = (applicant) => (
-    <tr key={applicant.id} className={applicant.status !== 'pending' ? `host-applicants__status--${applicant.status}` : ''}>
-      <td>
-        <div className="host-data-table__participant">
-          <div className="host-data-table__participant-avatar">{applicant.initials}</div>
-          <span className="host-data-table__participant-name">{applicant.name}</span>
-        </div>
-      </td>
-      <td className="host-applicants__reg-number">{applicant.regNumber}</td>
-      <td>
-        <span className="host-applicants__role-badge">{applicant.appliedRole}</span>
-      </td>
-      <td className="host-applicants__date">{applicant.submissionDate}</td>
-      <td>
-        {applicant.status !== 'pending' ? (
-          <span className={`host-applicants__status-label host-applicants__status-label--${applicant.status}`}>
-            {applicant.status.charAt(0).toUpperCase() + applicant.status.slice(1)}
-          </span>
-        ) : (
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-xs)' }}>Pending</span>
-        )}
-      </td>
-      <td>
-        <div className="host-applicants__actions">
-          <button className="host-data-table__action-btn" aria-label="View CV" onClick={() => addToast(`Viewing CV for ${applicant.name}`, 'info')}>
-            <Eye size={14} strokeWidth={2} />
-          </button>
-          {applicant.status === 'pending' && (
-            <>
-              <button 
-                className="host-data-table__action-btn host-data-table__action-btn--success" 
-                aria-label="Accept"
-                onClick={() => handleStatusChange(applicant.id, 'accepted', applicant.name)}
-              >
-                <Check size={14} strokeWidth={2} />
-              </button>
-              <button 
-                className="host-applicants__reject-btn" 
-                aria-label="Reject"
-                onClick={() => handleStatusChange(applicant.id, 'rejected', applicant.name)}
-              >
-                <X size={14} strokeWidth={2} />
-              </button>
+    return (
+      <tr key={applicant._id} className={applicant.status !== 'Pending' ? `host-applicants__status--${applicant.status.toLowerCase()}` : ''}>
+        <td>
+          <div className="host-data-table__participant">
+            <div className="host-data-table__participant-avatar">{student.name ? student.name.substring(0, 2).toUpperCase() : 'ST'}</div>
+            <div className="host-data-table__participant-info">
+              <span className="host-data-table__participant-name">{student.name || 'Unknown'}</span>
+              <span className="host-data-table__participant-email">{student.email || 'N/A'}</span>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span className="host-applicants__role-badge">{roleTitle}</span>
+        </td>
+        <td className="host-applicants__date">{subDate}</td>
+        <td>
+          {applicant.status !== 'Pending' ? (
+            <span className={`host-applicants__status-label host-applicants__status-label--${applicant.status.toLowerCase()}`}>
+              {applicant.status}
+            </span>
+          ) : (
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-xs)' }}>Pending</span>
+          )}
+        </td>
+        <td>
+          <div className="host-applicants__actions">
+            {applicant.resume && (
               <button 
                 className="host-data-table__action-btn" 
-                aria-label="Schedule Interview"
-                onClick={() => setInterviewApplicant(applicant)}
-                style={{ background: 'var(--info-soft)', color: 'var(--info)' }}
+                aria-label="View CV" 
+                onClick={() => setResumeModal(applicant)}
               >
-                <Calendar size={14} strokeWidth={2} />
+                <Eye size={14} strokeWidth={2} />
               </button>
-            </>
-          )}
-        </div>
-      </td>
-    </tr>
-  );
+            )}
+            
+            {applicant.answers && applicant.answers.length > 0 && (
+              <button 
+                className="host-data-table__action-btn" 
+                aria-label="View Answers" 
+                onClick={() => setAnswersModal(applicant)}
+              >
+                <FileText size={14} strokeWidth={2} />
+              </button>
+            )}
+
+            {applicant.status === 'Pending' && (
+              <>
+                <button 
+                  className="host-data-table__action-btn host-data-table__action-btn--success" 
+                  aria-label="Accept"
+                  onClick={() => handleStatusChange(applicant._id, 'Accepted', student.name)}
+                >
+                  <Check size={14} strokeWidth={2} />
+                </button>
+                <button 
+                  className="host-applicants__reject-btn" 
+                  aria-label="Reject"
+                  onClick={() => handleStatusChange(applicant._id, 'Rejected', student.name)}
+                >
+                  <X size={14} strokeWidth={2} />
+                </button>
+              </>
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  };
 
   return (
     <div className="host-applicants">
       <HostPageHeader
         title="Recruitment Applicants"
-        subtitle="Review applicant profiles, search credentials, and inspect student CV portfolios."
+        subtitle="Review applicant profiles, evaluate answers, and inspect student CV portfolios."
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
         <HostSearchBar
-          placeholder="Search applicants, roles, or registration IDs…"
+          placeholder="Search applicants or roles…"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           id="applicants-search"
@@ -170,57 +182,68 @@ function HostApplicants() {
               <option key={role} value={role}>{role}</option>
             ))}
           </select>
-          <button onClick={exportToWord} className="host-modal__btn host-modal__btn--secondary" style={{ padding: '8px 16px' }}>
-            <FileText size={16} /> Word
-          </button>
           <button onClick={exportToExcel} className="host-modal__btn host-modal__btn--secondary" style={{ padding: '8px 16px' }}>
-            <Download size={16} /> Excel
+            <Download size={16} /> Export Excel
           </button>
         </div>
       </div>
 
-      <HostDataTable
-        columns={columns}
-        data={paged}
-        emptyMessage="No applicant records match your search terms."
-        renderRow={renderRow}
-      />
+      {loading ? (
+        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading applicants...</div>
+      ) : (
+        <>
+          <HostDataTable
+            columns={columns}
+            data={paged}
+            emptyMessage="No applicant records match your search terms."
+            renderRow={renderRow}
+          />
+          <HostPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalEntries={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
 
-      <HostPagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalEntries={filtered.length}
-        pageSize={pageSize}
-        onPageChange={setCurrentPage}
-      />
-
-      {/* Schedule Interview Modal */}
+      {/* View CV Modal */}
       <HostModal
-        isOpen={!!interviewApplicant}
-        onClose={() => setInterviewApplicant(null)}
-        title={`Schedule Interview: ${interviewApplicant?.name}`}
-        footer={
-          <>
-            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setInterviewApplicant(null)}>Cancel</button>
-            <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={handleScheduleInterview}>Schedule</button>
-          </>
-        }
+        isOpen={!!resumeModal}
+        onClose={() => setResumeModal(null)}
+        title={`Resume: ${resumeModal?.studentId?.name}`}
       >
-        <form onSubmit={handleScheduleInterview}>
-          <div className="host-modal__field">
-            <label className="host-modal__label">Interview Date</label>
-            <input type="date" className="host-modal__input" required />
+        {resumeModal && (
+          <div style={{ height: '600px', width: '100%' }}>
+            <iframe 
+              src={`http://localhost:5000${resumeModal.resume}`} 
+              style={{ width: '100%', height: '100%', border: 'none', borderRadius: 'var(--radius-md)' }} 
+              title="Resume Preview"
+            />
           </div>
-          <div className="host-modal__field">
-            <label className="host-modal__label">Interview Time</label>
-            <input type="time" className="host-modal__input" required />
-          </div>
-          <div className="host-modal__field">
-            <label className="host-modal__label">Venue / Meeting Link</label>
-            <input type="text" className="host-modal__input" placeholder="e.g. Room 301 or Zoom Link" required />
-          </div>
-        </form>
+        )}
       </HostModal>
+
+      {/* View Answers Modal */}
+      <HostModal
+        isOpen={!!answersModal}
+        onClose={() => setAnswersModal(null)}
+        title={`Application Answers: ${answersModal?.studentId?.name}`}
+      >
+        {answersModal && answersModal.answers && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {answersModal.answers.map((ans, idx) => (
+              <div key={idx} style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Question {idx + 1}</span>
+                <span style={{ display: 'block', fontSize: '14px', color: 'var(--text-primary)', marginBottom: '8px', fontWeight: 600 }}>{ans.question}</span>
+                <span style={{ display: 'block', fontSize: '14px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '4px' }}>{ans.answer}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </HostModal>
+
     </div>
   );
 }
