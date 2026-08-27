@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Send, CheckCircle, HelpCircle } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
-import { supportCategories, allCampusClubs } from '../data/mockData';
 import { useToast } from '../context/ToastContext';
+import api from '../api/axios';
+
+const supportCategories = ['Event Participation', 'Recruitment Status', 'Payment Issue', 'Technical Glitch', 'Other'];
 
 function StudentSupport() {
+  const [clubs, setClubs] = useState([]);
   const [formData, setFormData] = useState({
     club: '',
     category: 'Event Participation',
@@ -16,18 +19,39 @@ function StudentSupport() {
   const [ticketRef, setTicketRef] = useState(null);
   const { addToast } = useToast();
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const { data } = await api.get('/clubs');
+        setClubs(data);
+      } catch (err) {
+        console.error('Failed to load clubs');
+      }
+    };
+    fetchClubs();
+  }, []);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const ref = `TK-${Math.floor(1000 + Math.random() * 9000)}`;
-      setTicketRef(ref);
-      setIsSubmitting(false);
+    try {
+      const description = `Priority: ${formData.priority}\nCategory: ${formData.category}\nClub: ${formData.club || 'General'}\n\nMessage:\n${formData.message}`;
+      
+      const { data } = await api.post('/support', {
+        type: 'Support',
+        subject: formData.subject,
+        description: description
+      });
+
+      setTicketRef(data._id.substring(0, 8));
       setFormData({ club: '', category: 'Event Participation', priority: 'Standard', subject: '', message: '' });
       addToast('Message sent successfully!', 'success');
-    }, 1000);
+    } catch (err) {
+      addToast('Failed to send message', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,7 +80,7 @@ function StudentSupport() {
                 <CheckCircle size={40} />
               </div>
               <h3 style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px', letterSpacing: '-0.5px' }}>Message Sent</h3>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px' }}>Your inquiry has been received. We usually respond within 24 hours.</p>
+              <p style={{ color: 'var(--text-secondary)', marginBottom: '32px', fontSize: '15px' }}>Your inquiry (Ticket #{ticketRef}) has been received. We usually respond within 24 hours.</p>
               <div>
                 <button className="host-modal__btn host-modal__btn--secondary" onClick={() => setTicketRef(null)}>
                   Send Another Message
@@ -76,9 +100,9 @@ function StudentSupport() {
                     <label className="host-modal__label">Select Organization</label>
                     <select className="host-modal__input" value={formData.club} onChange={(e) => setFormData({...formData, club: e.target.value})} required>
                       <option value="" disabled>Choose a club...</option>
-                      <option value="general">General University Support</option>
-                      {allCampusClubs.map(club => (
-                        <option key={club.id} value={club.id}>{club.name}</option>
+                      <option value="General University Support">General University Support</option>
+                      {clubs.map(club => (
+                        <option key={club._id} value={club.name}>{club.name}</option>
                       ))}
                     </select>
                   </div>

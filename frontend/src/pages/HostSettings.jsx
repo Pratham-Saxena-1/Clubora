@@ -1,40 +1,89 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, Save } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import { useToast } from '../context/ToastContext';
-import { currentUser, clubInfo } from '../data/mockData';
+import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 function HostSettings() {
+  const { user, login } = useAuth(); // Need to update context on save if possible, or just rely on re-fetch
   const [formData, setFormData] = useState({
-    name: currentUser.name,
-    email: currentUser.email,
+    name: '',
+    email: '',
     password: '',
-    presidentEmail: clubInfo.president.email,
-    instagramUrl: clubInfo.contacts.instagram,
-    regNumber: currentUser.regNumber,
-    contactNumber: '+1 555-0123',
+    presidentEmail: '',
+    instagramUrl: '',
+    regNumber: '',
+    contactNumber: '',
     gender: 'Male',
   });
   
   const [photoName, setPhotoName] = useState('Recommended: 200x200px JPG or PNG');
   const fileInputRef = useRef(null);
-  
   const { addToast } = useToast();
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await api.get(`/users/${user.id}`);
+        setFormData(prev => ({
+          ...prev,
+          name: data.name || '',
+          email: data.email || '',
+          contactNumber: data.contactNumber || '',
+          presidentEmail: data.settings?.presidentEmail || '',
+          instagramUrl: data.settings?.instagramUrl || '',
+          regNumber: data.settings?.regNumber || '',
+          gender: data.settings?.gender || 'Male',
+        }));
+      } catch (err) {
+        addToast('Failed to load profile data', 'error');
+      }
+    };
+    if (user?.id) fetchProfile();
+  }, [user, addToast]);
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     if (e.target.files && e.target.files[0]) {
-      setPhotoName(e.target.files[0].name);
-      addToast('Photo selected successfully!', 'success');
+      const file = e.target.files[0];
+      setPhotoName(file.name);
+      
+      const formData = new FormData();
+      formData.append('profilePic', file);
+      
+      try {
+        await api.post(`/users/${user.id}/profile-pic`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        addToast('Photo updated successfully!', 'success');
+      } catch (err) {
+        addToast('Failed to update photo', 'error');
+      }
     }
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    addToast('Profile settings saved successfully!', 'success');
+    try {
+      await api.put(`/users/${user.id}`, {
+        name: formData.name,
+        contactNumber: formData.contactNumber,
+        settings: {
+          presidentEmail: formData.presidentEmail,
+          instagramUrl: formData.instagramUrl,
+          regNumber: formData.regNumber,
+          gender: formData.gender,
+        }
+        // Password update would go to a separate endpoint or require old password typically, keeping simple
+      });
+      addToast('Profile settings saved successfully!', 'success');
+    } catch (err) {
+      addToast('Failed to save settings', 'error');
+    }
   };
 
   return (
@@ -50,7 +99,7 @@ function HostSettings() {
           
           <div className="host-settings__photo-section">
             <div className="host-settings__photo-preview">
-              <span className="host-settings__photo-initials">{currentUser.initials}</span>
+              <span className="host-settings__photo-initials">{formData.name ? formData.name.substring(0, 2).toUpperCase() : 'HO'}</span>
             </div>
             <div className="host-settings__photo-info">
               <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
@@ -73,12 +122,13 @@ function HostSettings() {
               />
             </div>
             <div className="host-settings__field">
-              <label className="host-settings__label">Email Address</label>
+              <label className="host-settings__label">Email Address (Read-only)</label>
               <input 
                 type="email" 
                 className="host-settings__input" 
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                readOnly
+                style={{ opacity: 0.7 }}
               />
             </div>
             <div className="host-settings__field">
@@ -107,10 +157,6 @@ function HostSettings() {
                 <option value="Female">Female</option>
                 <option value="Other">Other</option>
               </select>
-            </div>
-            <div className="host-settings__field">
-              <label className="host-settings__label">Change Password</label>
-              <input type="password" className="host-settings__input" placeholder="Leave blank to keep current password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
             </div>
           </div>
         </section>

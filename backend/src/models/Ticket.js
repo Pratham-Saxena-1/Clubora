@@ -23,6 +23,14 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       enum: ['Support', 'Feedback'],
     },
+    messages: [
+      {
+        sender: String,
+        role: { type: String, enum: ['user', 'host', 'system'] },
+        text: String,
+        timestamp: { type: Date, default: Date.now }
+      }
+    ]
   },
   { timestamps: true }
 );

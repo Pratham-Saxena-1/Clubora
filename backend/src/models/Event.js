@@ -24,6 +24,11 @@ const eventSchema = new mongoose.Schema(
     capacity: {
       type: Number,
     },
+    galleryImages: [
+      {
+        type: String,
+      },
+    ],
     qrImage: {
       type: String, // generic qr for the event (if needed)
     },

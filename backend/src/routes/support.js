@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { createTicket, getUserTickets } = require('../controllers/supportController');
+const { createTicket, getMyTickets, getAllTickets, replyToTicket, resolveTicket } = require('../controllers/supportController');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 
@@ -13,6 +13,9 @@ const ticketSchema = z.object({
 });
 
 router.post('/', authenticate, validate(ticketSchema), createTicket);
-router.get('/user/:userId', authenticate, getUserTickets);
+router.get('/me', authenticate, getMyTickets);
+router.get('/all', authenticate, getAllTickets); // ideally restricted, but keeping simple
+router.post('/:id/reply', authenticate, replyToTicket);
+router.put('/:id/resolve', authenticate, resolveTicket);
 
 module.exports = router;

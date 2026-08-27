@@ -26,7 +26,10 @@ exports.getStudentApplications = async (req, res, next) => {
     if (req.user.id !== req.params.studentId) {
       return res.status(403).json({ error: { message: 'Forbidden', code: 'FORBIDDEN' } });
     }
-    const applications = await Application.find({ studentId: req.params.studentId }).populate('recruitmentId');
+    const applications = await Application.find({ studentId: req.params.studentId }).populate({
+      path: 'recruitmentId',
+      populate: { path: 'clubId', select: 'name' }
+    });
     res.json(applications);
   } catch (error) {
     next(error);
@@ -51,6 +54,22 @@ exports.updateApplicationStatus = async (req, res, next) => {
       { new: true, runValidators: true }
     );
     res.json(application);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getClubApplications = async (req, res, next) => {
+  try {
+    const Club = require('../models/Club');
+    const club = await Club.findOne({ hostId: req.user.id });
+    if (!club) return res.json([]);
+    const recruitments = await Recruitment.find({ clubId: club._id });
+    const recruitmentIds = recruitments.map(r => r._id);
+    const applications = await Application.find({ recruitmentId: { $in: recruitmentIds } })
+      .populate('studentId', 'name email profilePic contactNumber')
+      .populate('recruitmentId', 'title type');
+    res.json(applications);
   } catch (error) {
     next(error);
   }

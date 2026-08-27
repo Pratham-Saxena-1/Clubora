@@ -25,6 +25,18 @@ const clubSchema = new mongoose.Schema(
     contactNumber: {
       type: String,
     },
+    establishedYear: {
+      type: Number,
+      default: new Date().getFullYear(),
+    },
+    teamMembers: [
+      {
+        name: { type: String, required: true },
+        role: { type: String, required: true },
+        photoUrl: { type: String },
+        parentId: { type: mongoose.Schema.Types.ObjectId }
+      }
+    ]
   },
   { timestamps: true }
 );

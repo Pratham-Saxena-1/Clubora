@@ -14,6 +14,8 @@ const recruitmentRoutes = require('./routes/recruitments');
 const applicationRoutes = require('./routes/applications');
 const eventRoutes = require('./routes/events');
 const supportRoutes = require('./routes/support');
+const certificateRoutes = require('./routes/certificates');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -37,6 +39,8 @@ app.use('/api/recruitments', recruitmentRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/certificates', certificateRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Error Handler Middleware (should be last piece of middleware)
 app.use(errorHandler);

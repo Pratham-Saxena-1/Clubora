@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { createApplication, getStudentApplications, getRecruitmentApplicants, updateApplicationStatus } = require('../controllers/applicationController');
+const { createApplication, getStudentApplications, getRecruitmentApplicants, updateApplicationStatus, getClubApplications } = require('../controllers/applicationController');
 const { authenticate, authorizeOwner, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
@@ -33,6 +33,7 @@ const isApplicationOwner = async (req) => {
 
 // body contains recruitmentId, answers (stringified JSON)
 router.post('/', authenticate, authorize('Student'), upload.single('resume'), createApplication);
+router.get('/club', authenticate, authorize('Host'), getClubApplications);
 router.get('/student/:studentId', authenticate, getStudentApplications);
 router.get('/recruitment/:recruitmentId', authenticate, authorizeOwner(isRecruitmentOwner), getRecruitmentApplicants);
 router.put('/:id/status', authenticate, authorizeOwner(isApplicationOwner), validate(statusSchema), updateApplicationStatus);
