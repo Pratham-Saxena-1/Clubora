@@ -66,12 +66,12 @@ function StudentDiscover() {
     setSubmitting(true);
     
     try {
-      // Format answers as array
-      const formattedAnswers = Object.entries(answers).map(([q, a]) => ({ question: q, answer: a }));
+      const formData = new FormData();
+      if (selectedEvent.isPaid && e.target.paymentScreenshot) {
+        formData.append('paymentScreenshot', e.target.paymentScreenshot.files[0]);
+      }
       
-      await api.post(`/events/${selectedEvent._id}/register`, {
-        answers: JSON.stringify(formattedAnswers)
-      });
+      await api.post(`/events/${selectedEvent._id}/register`, formData);
       
       setRegisteredEvents(prev => ({ ...prev, [selectedEvent._id]: true }));
       addToast('Successfully registered for the event!', 'success');
@@ -243,24 +243,26 @@ function StudentDiscover() {
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Please fill out the following details requested by the organizer.</p>
                   </div>
                   
-                  {selectedEvent.questions && selectedEvent.questions.length > 0 ? (
+                  {selectedEvent.isPaid ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-                      {selectedEvent.questions.map((q, idx) => (
-                        <div key={idx}>
-                          <label className="host-modal__label">{q}</label>
+                      <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                        <h4 style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-primary)' }}>Payment Required: ${selectedEvent.fee}</h4>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Please complete the payment and upload a screenshot of the transaction as proof.</p>
+                        <div className="host-modal__field" style={{ marginBottom: 0 }}>
+                          <label className="host-modal__label">Payment Proof (Screenshot)</label>
                           <input 
-                            type="text" 
+                            type="file" 
+                            name="paymentScreenshot"
                             className="host-modal__input" 
+                            accept="image/jpeg, image/png, image/jpg"
                             required 
-                            value={answers[q] || ''}
-                            onChange={(e) => setAnswers({...answers, [q]: e.target.value})}
                           />
                         </div>
-                      ))}
+                      </div>
                     </div>
                   ) : (
                     <div style={{ padding: '24px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', textAlign: 'center', marginBottom: '24px' }}>
-                      <p style={{ color: 'var(--text-secondary)' }}>No additional information required. You're ready to register!</p>
+                      <p style={{ color: 'var(--text-secondary)' }}>This is a free event. You're ready to register!</p>
                     </div>
                   )}
                   

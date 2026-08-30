@@ -21,13 +21,22 @@ function HostTopBar() {
     if (user?.id) {
       api.get('/notifications/me').then(res => setNotifications(res.data)).catch(console.error);
       api.get('/events').then(res => {
-        const events = res.data.map(event => ({
-          id: event._id,
-          title: event.title,
-          date: event.date ? new Date(event.date).toISOString().split('T')[0] : null,
-          time: event.time,
-          venue: event.venue
-        })).filter(e => e.date);
+        const events = res.data.map(event => {
+          let dateStr = null;
+          let timeStr = null;
+          if (event.dateTime) {
+            const dt = new Date(event.dateTime);
+            dateStr = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+            timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          }
+          return {
+            id: event._id,
+            title: event.title,
+            date: dateStr,
+            time: timeStr,
+            venue: event.location
+          };
+        }).filter(e => e.date);
         setUpcomingEvents(events);
       }).catch(console.error);
     }

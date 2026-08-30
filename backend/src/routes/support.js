@@ -10,6 +10,7 @@ const ticketSchema = z.object({
   subject: z.string().min(1),
   description: z.string().optional(),
   type: z.enum(['Support', 'Feedback']).optional(),
+  eventId: z.string().optional(),
 });
 
 router.post('/', authenticate, validate(ticketSchema), createTicket);

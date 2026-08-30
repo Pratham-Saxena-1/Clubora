@@ -11,8 +11,6 @@ function HostDashboard() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [club, setClub] = useState(null);
-  const [questions, setQuestions] = useState([]);
-  const [newQuestion, setNewQuestion] = useState('');
   
   // File inputs state
   const [bannerFileName, setBannerFileName] = useState('No file chosen');
@@ -49,9 +47,14 @@ function HostDashboard() {
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
     payload.clubId = club._id;
-    payload.questions = questions; // the custom questions array
+    payload.isPaid = payload.isPaid === 'true';
+    if (!payload.isPaid) {
+      payload.fee = 0;
+    } else {
+      payload.fee = Number(payload.fee);
+    }
 
-    // Basic datetime parsing for the mock input format
+    // Basic datetime parsing for the input format
     payload.dateTime = new Date(payload.date + ' ' + payload.time).toISOString() || new Date().toISOString();
     
     try {
@@ -69,15 +72,14 @@ function HostDashboard() {
     }
   };
 
-  const handleAddQuestion = () => {
-    if (newQuestion.trim()) {
-      setQuestions([...questions, newQuestion.trim()]);
-      setNewQuestion('');
+  const handleDeleteEvent = async (event) => {
+    try {
+      await api.delete(`/events/${event._id}`);
+      addToast('Event deleted successfully', 'success');
+      fetchClubAndEvents();
+    } catch (err) {
+      addToast('Failed to delete event', 'error');
     }
-  };
-
-  const handleRemoveQuestion = (idx) => {
-    setQuestions(questions.filter((_, i) => i !== idx));
   };
 
   const handleViewAll = () => {
@@ -87,14 +89,12 @@ function HostDashboard() {
   const openCreateModal = () => {
     setEditingEvent(null);
     setBannerFileName('No file chosen');
-    setQuestions([]);
     setIsModalOpen(true);
   };
   
   const openEditModal = (event) => {
     setEditingEvent(event);
     setBannerFileName('No file chosen');
-    setQuestions(event.questions || []);
     setIsModalOpen(true);
   };
 
@@ -115,7 +115,7 @@ function HostDashboard() {
         <h2 className="host-dashboard__section-title">Upcoming Club Events</h2>
         <div className="host-dashboard__events-grid">
           {events.length > 0 ? events.map((event) => (
-            <HostEventCard key={event._id || event.id} event={event} onEdit={openEditModal} />
+            <HostEventCard key={event._id || event.id} event={event} onEdit={openEditModal} onDelete={handleDeleteEvent} />
           )) : (
             <div style={{ color: 'var(--text-secondary)' }}>No events created yet.</div>
           )}
@@ -200,26 +200,47 @@ function HostDashboard() {
           </div>
           
           <div className="host-modal__field">
-            <label className="host-modal__label">Custom Registration Questions (Optional)</label>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-              <input 
-                type="text" 
-                className="host-modal__input" 
-                placeholder="e.g. Dietary preferences?"
-                value={newQuestion}
-                onChange={(e) => setNewQuestion(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddQuestion(); } }}
-              />
-              <button type="button" onClick={handleAddQuestion} style={{ padding: '0 16px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}>Add</button>
+            <label className="host-modal__label">Event Type</label>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input 
+                  type="radio" 
+                  name="isPaid" 
+                  value="false" 
+                  defaultChecked={!editingEvent?.isPaid}
+                  onChange={(e) => {
+                    const feeInput = document.getElementById('event-fee-input');
+                    if (feeInput) feeInput.style.display = 'none';
+                  }}
+                />
+                <span style={{ fontSize: '14px' }}>Free Event</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input 
+                  type="radio" 
+                  name="isPaid" 
+                  value="true" 
+                  defaultChecked={editingEvent?.isPaid}
+                  onChange={(e) => {
+                    const feeInput = document.getElementById('event-fee-input');
+                    if (feeInput) feeInput.style.display = 'block';
+                  }}
+                />
+                <span style={{ fontSize: '14px' }}>Paid Event</span>
+              </label>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {questions.map((q, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: '14px' }}>{q}</span>
-                  <button type="button" onClick={() => handleRemoveQuestion(idx)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
-                </div>
-              ))}
-            </div>
+          </div>
+          
+          <div className="host-modal__field" id="event-fee-input" style={{ display: editingEvent?.isPaid ? 'block' : 'none' }}>
+            <label className="host-modal__label">Event Fee Amount (₹)</label>
+            <input 
+              name="fee"
+              type="number" 
+              min="0"
+              className="host-modal__input" 
+              placeholder="e.g. 500"
+              defaultValue={editingEvent?.fee || ''}
+            />
           </div>
 
           <div className="host-modal__field" style={{ marginTop: '16px' }}>

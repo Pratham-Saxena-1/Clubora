@@ -11,20 +11,17 @@ function StudentDashboard() {
 
   const [registrations, setRegistrations] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [regsRes, appsRes, certsRes] = await Promise.all([
+        const [regsRes, appsRes] = await Promise.all([
           api.get('/events/registrations/student/me'),
-          api.get(`/applications/student/${user.id}`),
-          api.get('/certificates/student/me')
+          api.get(`/applications/student/${user.id}`)
         ]);
         setRegistrations(regsRes.data);
         setApplications(appsRes.data);
-        setCertificates(certsRes.data);
       } catch (err) {
         console.error('Failed to load dashboard data');
       } finally {
@@ -41,12 +38,13 @@ function StudentDashboard() {
     navigate('/student/discover');
   };
 
-  const attendedEventsCount = registrations.filter(r => r.checkedIn).length;
+  const attendedEventsCount = registrations.filter(r => r.paymentVerified).length;
   const pendingAppsCount = applications.filter(a => a.status === 'Pending').length;
+  const certificatesCount = registrations.filter(r => r.certificate).length;
   
   const upcomingEvents = registrations
-    .filter(r => r.eventId && new Date(r.eventId.date) >= new Date())
-    .sort((a, b) => new Date(a.eventId.date) - new Date(b.eventId.date));
+    .filter(r => r.eventId && new Date(r.eventId.dateTime) >= new Date())
+    .sort((a, b) => new Date(a.eventId.dateTime) - new Date(b.eventId.dateTime));
 
   if (loading) {
     return (
@@ -92,7 +90,7 @@ function StudentDashboard() {
         <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '24px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '8px' }}>Certificates</span>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
-            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{String(certificates.length).padStart(2, '0')}</span>
+            <span style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>{String(certificatesCount).padStart(2, '0')}</span>
             <span style={{ background: 'var(--accent-soft)', color: 'var(--primary)', fontSize: '11px', fontWeight: 700, padding: '4px 8px', borderRadius: '12px', marginBottom: '4px' }}>Claimed</span>
           </div>
           <div style={{ position: 'absolute', top: '24px', right: '24px', width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000' }}>
@@ -144,7 +142,7 @@ function StudentDashboard() {
                       <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px', lineHeight: 1.4 }}>{event.title}</h4>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-tertiary)' }}>
                         <CalendarCheck size={14} />
-                        <span>{new Date(event.date).toLocaleDateString()}</span>
+                        <span>{new Date(event.dateTime).toLocaleDateString()}</span>
                       </div>
                     </div>
                     {reg.qrTicket ? (
@@ -165,21 +163,21 @@ function StudentDashboard() {
           </section>
 
           {/* Certificates Panel */}
-          {certificates.length > 0 && (
+          {registrations.filter(r => r.certificate).length > 0 && (
             <section className="host-dashboard__section" style={{ animationDelay: '200ms' }}>
               <h2 className="host-dashboard__section-title" style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Earned Certificates</h2>
               <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '8px' }}>
-                {certificates.map(cert => (
-                  <div key={cert._id} style={{ minWidth: '260px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'transform 0.2s', cursor: 'pointer' }} className="hover-lift">
+                {registrations.filter(r => r.certificate).map(reg => (
+                  <div key={reg._id} style={{ minWidth: '260px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'transform 0.2s', cursor: 'pointer' }} className="hover-lift">
                     <div>
                       <Award size={24} style={{ color: 'var(--primary)', marginBottom: '16px' }} />
-                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.4 }}>{cert.title}</h4>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{cert.clubId?.name || 'Unknown Club'}</span>
+                      <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', lineHeight: 1.4 }}>{reg.eventId?.title || 'Unknown Event'}</h4>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{reg.eventId?.clubId?.name || 'Unknown Club'}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                      <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>{new Date(cert.issueDate).toLocaleDateString()}</span>
-                      {cert.fileUrl && (
-                        <a href={`http://localhost:5000${cert.fileUrl}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                      <span style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>{new Date(reg.updatedAt).toLocaleDateString()}</span>
+                      {reg.certificate && (
+                        <a href={`http://localhost:5000${reg.certificate}`} target="_blank" rel="noopener noreferrer" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: '8px', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                           <Download size={14} />
                         </a>
                       )}

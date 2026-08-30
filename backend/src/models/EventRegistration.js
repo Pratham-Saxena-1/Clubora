@@ -12,19 +12,19 @@ const eventRegistrationSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    checkedIn: {
+    paymentVerified: {
       type: Boolean,
       default: false,
+    },
+    paymentScreenshot: {
+      type: String, // Path to payment screenshot
     },
     qrTicket: {
       type: String, // uploaded manually by host for this specific registration
     },
-    answers: [
-      {
-        question: String,
-        answer: String,
-      },
-    ],
+    certificate: {
+      type: String, // Path to uploaded certificate
+    },
   },
   { timestamps: true }
 );

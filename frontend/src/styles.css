@@ -571,7 +571,7 @@ img { max-width: 100%; display: block; }
 .hierarchy-tree li:first-child::after {
   border-radius: 5px 0 0 0;
 }
-.hierarchy-tree ul::before {
+.hierarchy-tree ul ul::before {
   content: '';
   position: absolute; top: 0; left: 50%;
   border-left: 2px solid var(--border);

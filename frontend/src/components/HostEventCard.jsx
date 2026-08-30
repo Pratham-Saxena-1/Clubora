@@ -2,7 +2,7 @@ import { Calendar, Pencil, Eye } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 
-function HostEventCard({ event, onEdit }) {
+function HostEventCard({ event, onEdit, onDelete }) {
   const { addToast } = useToast();
   const navigate = useNavigate();
 
@@ -18,6 +18,17 @@ function HostEventCard({ event, onEdit }) {
     navigate('/host/registrations');
   };
 
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      if (onDelete) {
+        onDelete(event);
+      }
+    }
+  };
+
+  const formattedDate = event.dateTime ? new Date(event.dateTime).toLocaleDateString() : (event.date || 'TBA');
+  const formattedTime = event.dateTime ? new Date(event.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (event.time || 'TBA');
+
   return (
     <div className="host-event-card">
       <div className="host-event-card__cover">
@@ -28,13 +39,22 @@ function HostEventCard({ event, onEdit }) {
             <Calendar size={32} strokeWidth={1.5} />
           </div>
         )}
+        {onDelete && (
+          <button 
+            onClick={handleDelete}
+            style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+            aria-label="Delete event"
+          >
+            <span style={{ fontSize: '16px', lineHeight: 1 }}>&times;</span>
+          </button>
+        )}
       </div>
 
       <div className="host-event-card__body">
         <h3 className="host-event-card__title">{event.title}</h3>
         <div className="host-event-card__date">
           <Calendar size={14} strokeWidth={1.8} />
-          <span>{event.date} · {event.time}</span>
+          <span>{formattedDate} &middot; {formattedTime}</span>
         </div>
         <p className="host-event-card__desc">{event.description}</p>
 
