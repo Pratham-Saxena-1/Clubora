@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Save } from 'lucide-react';
+import { Upload, Save, AlertTriangle } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 function HostSettings() {
-  const { user, login } = useAuth(); // Need to update context on save if possible, or just rely on re-fetch
+  const { user, login, logout } = useAuth(); // Need to update context on save if possible, or just rely on re-fetch
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -83,6 +83,18 @@ function HostSettings() {
       addToast('Profile settings saved successfully!', 'success');
     } catch (err) {
       addToast('Failed to save settings', 'error');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (window.confirm('Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.')) {
+      try {
+        await api.delete(`/users/${user.id}`);
+        addToast('Account deleted successfully', 'success');
+        logout();
+      } catch (err) {
+        addToast('Failed to delete account', 'error');
+      }
     }
   };
 
@@ -166,6 +178,23 @@ function HostSettings() {
           <span>Save Changes</span>
         </button>
       </form>
+
+      <section className="host-settings__card" style={{ marginTop: 'var(--space-xl)', border: '1px solid var(--error)' }}>
+        <h2 className="host-settings__card-title" style={{ color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertTriangle size={20} />
+          Danger Zone
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
+          Once you delete your account, there is no going back. Please be certain. This will also delete all clubs, events, recruitments, and student data associated with your clubs.
+        </p>
+        <button 
+          type="button" 
+          onClick={handleDeleteAccount}
+          style={{ background: 'var(--error)', color: '#fff', padding: '10px 20px', borderRadius: 'var(--radius-md)', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <AlertTriangle size={16} /> Delete Account
+        </button>
+      </section>
     </div>
   );
 }

@@ -23,6 +23,10 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       enum: ['Support', 'Feedback'],
     },
+    eventId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Event',
+    },
     messages: [
       {
         sender: String,

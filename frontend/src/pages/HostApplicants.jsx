@@ -20,6 +20,7 @@ function HostApplicants() {
   const [roleFilter, setRoleFilter] = useState('');
   const [resumeModal, setResumeModal] = useState(null);
   const [answersModal, setAnswersModal] = useState(null);
+  const [interviewModal, setInterviewModal] = useState(null);
   
   useEffect(() => {
     fetchApplicants();
@@ -60,6 +61,20 @@ function HostApplicants() {
       addToast(`${name} has been ${newStatus}.`, newStatus === 'Accepted' ? 'success' : 'info');
     } catch (err) {
       addToast('Failed to update status', 'error');
+    }
+  };
+  
+  const handleSetInterview = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData);
+    try {
+      await api.put(`/applications/${interviewModal._id}/interview`, payload);
+      setApplicants(prev => prev.map(a => a._id === interviewModal._id ? { ...a, interview: payload, status: 'Interviewed' } : a));
+      addToast('Interview scheduled successfully!', 'success');
+      setInterviewModal(null);
+    } catch (err) {
+      addToast('Failed to schedule interview', 'error');
     }
   };
   
@@ -132,15 +147,35 @@ function HostApplicants() {
               </button>
             )}
 
-            {applicant.status === 'Pending' && (
+            {applicant.status !== 'Accepted' && applicant.status !== 'Rejected' && (
               <>
-                <button 
-                  className="host-data-table__action-btn host-data-table__action-btn--success" 
-                  aria-label="Accept"
-                  onClick={() => handleStatusChange(applicant._id, 'Accepted', student.name)}
-                >
-                  <Check size={14} strokeWidth={2} />
-                </button>
+                {applicant.status === 'Pending' && (
+                  <button 
+                    className="host-data-table__action-btn host-data-table__action-btn--success" 
+                    aria-label="Shortlist"
+                    onClick={() => handleStatusChange(applicant._id, 'Shortlisted', student.name)}
+                  >
+                    Shortlist
+                  </button>
+                )}
+                {applicant.status === 'Shortlisted' && (
+                  <button 
+                    className="host-data-table__action-btn host-data-table__action-btn--warning" 
+                    aria-label="Set Interview"
+                    onClick={() => setInterviewModal(applicant)}
+                  >
+                    <Calendar size={14} strokeWidth={2} />
+                  </button>
+                )}
+                {applicant.status === 'Interviewed' && (
+                  <button 
+                    className="host-data-table__action-btn host-data-table__action-btn--success" 
+                    aria-label="Accept"
+                    onClick={() => handleStatusChange(applicant._id, 'Accepted', student.name)}
+                  >
+                    <Check size={14} strokeWidth={2} />
+                  </button>
+                )}
                 <button 
                   className="host-applicants__reject-btn" 
                   aria-label="Reject"
@@ -242,6 +277,34 @@ function HostApplicants() {
             ))}
           </div>
         )}
+      </HostModal>
+
+      {/* Schedule Interview Modal */}
+      <HostModal
+        isOpen={!!interviewModal}
+        onClose={() => setInterviewModal(null)}
+        title={`Schedule Interview: ${interviewModal?.studentId?.name}`}
+        footer={
+          <>
+            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setInterviewModal(null)}>Cancel</button>
+            <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={() => document.getElementById('interview-form').requestSubmit()}>Set Interview</button>
+          </>
+        }
+      >
+        <form id="interview-form" onSubmit={handleSetInterview}>
+          <div className="host-modal__field">
+            <label className="host-modal__label">Interview Date</label>
+            <input type="date" name="date" className="host-modal__input" required />
+          </div>
+          <div className="host-modal__field">
+            <label className="host-modal__label">Interview Time</label>
+            <input type="time" name="time" className="host-modal__input" required />
+          </div>
+          <div className="host-modal__field">
+            <label className="host-modal__label">Meeting Link / Location</label>
+            <input type="text" name="link" className="host-modal__input" placeholder="e.g. Google Meet link or Room 302" required />
+          </div>
+        </form>
       </HostModal>
 
     </div>

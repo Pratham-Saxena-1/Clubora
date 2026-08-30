@@ -11,7 +11,13 @@ const Club = require('../models/Club');
 const router = express.Router();
 
 const statusSchema = z.object({
-  status: z.enum(['Pending', 'Accepted', 'Rejected'])
+  status: z.enum(['Pending', 'Shortlisted', 'Interviewed', 'Accepted', 'Rejected'])
+});
+
+const interviewSchema = z.object({
+  date: z.string(),
+  time: z.string(),
+  link: z.string()
 });
 
 const isRecruitmentOwner = async (req) => {
@@ -37,5 +43,18 @@ router.get('/club', authenticate, authorize('Host'), getClubApplications);
 router.get('/student/:studentId', authenticate, getStudentApplications);
 router.get('/recruitment/:recruitmentId', authenticate, authorizeOwner(isRecruitmentOwner), getRecruitmentApplicants);
 router.put('/:id/status', authenticate, authorizeOwner(isApplicationOwner), validate(statusSchema), updateApplicationStatus);
+
+router.put('/:id/interview', authenticate, authorizeOwner(isApplicationOwner), validate(interviewSchema), async (req, res, next) => {
+  try {
+    const application = await Application.findByIdAndUpdate(
+      req.params.id,
+      { interview: req.body, status: 'Interviewed' },
+      { new: true }
+    );
+    res.json(application);
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;

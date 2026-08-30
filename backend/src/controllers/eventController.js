@@ -48,14 +48,31 @@ exports.updateEvent = async (req, res, next) => {
   }
 };
 
+exports.deleteEvent = async (req, res, next) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: { message: 'Event not found' } });
+    }
+    // Delete all registrations for this event
+    await EventRegistration.deleteMany({ eventId: event._id });
+    await event.deleteOne();
+    res.json({ message: 'Event deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.registerForEvent = async (req, res, next) => {
   try {
-    const { answers } = req.body;
-    const registration = await EventRegistration.create({
+    const payload = {
       eventId: req.params.id,
       studentId: req.user.id,
-      answers: Array.isArray(answers) ? answers : (answers ? JSON.parse(answers) : [])
-    });
+    };
+    if (req.file) {
+      payload.paymentScreenshot = `/uploads/${req.file.filename}`;
+    }
+    const registration = await EventRegistration.create(payload);
     res.status(201).json(registration);
   } catch (error) {
     next(error);
@@ -74,11 +91,11 @@ exports.getMyRegistrations = async (req, res, next) => {
   }
 };
 
-exports.checkInRegistration = async (req, res, next) => {
+exports.verifyPayment = async (req, res, next) => {
   try {
     const registration = await EventRegistration.findByIdAndUpdate(
       req.params.id,
-      { checkedIn: true },
+      { paymentVerified: true },
       { new: true }
     );
     res.json(registration);
@@ -107,15 +124,38 @@ exports.uploadQrTicket = async (req, res, next) => {
   }
 };
 
-exports.uploadGalleryImage = async (req, res, next) => {
+exports.uploadCertificate = async (req, res, next) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: { message: 'Please upload an image', code: 'BAD_REQUEST' } });
+      return res.status(400).json({ error: { message: 'Please upload a certificate', code: 'BAD_REQUEST' } });
+    }
+    const filePath = `/uploads/${req.file.filename}`;
+    const registration = await EventRegistration.findByIdAndUpdate(
+      req.params.id,
+      { certificate: filePath },
+      { new: true }
+    );
+    if (!registration) {
+      return res.status(404).json({ error: { message: 'Registration not found', code: 'NOT_FOUND' } });
+    }
+    res.json(registration);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.uploadGalleryImage = async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: { message: 'Please upload at least one image', code: 'BAD_REQUEST' } });
     }
     const event = await Event.findById(req.params.id);
     if (!event) return res.status(404).json({ error: { message: 'Event not found' } });
     
-    event.galleryImages.push(`/uploads/gallery/${req.file.filename}`);
+    req.files.forEach(file => {
+      event.galleryImages.push(`/uploads/gallery/${file.filename}`);
+    });
+    
     await event.save();
     res.json(event);
   } catch (error) {

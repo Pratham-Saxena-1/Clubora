@@ -27,7 +27,7 @@ const recruitmentSchema = new mongoose.Schema(
         type: String,
       },
     ],
-    questions: [
+    positions: [
       {
         type: String,
       },

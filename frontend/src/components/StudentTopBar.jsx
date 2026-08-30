@@ -24,9 +24,9 @@ function StudentTopBar() {
         const events = res.data.map(reg => ({
           id: reg._id,
           title: reg.eventId?.title,
-          date: reg.eventId?.date ? new Date(reg.eventId.date).toISOString().split('T')[0] : null,
-          time: reg.eventId?.time,
-          location: reg.eventId?.venue
+          date: reg.eventId?.dateTime ? new Date(reg.eventId.dateTime).toISOString().split('T')[0] : null,
+          time: reg.eventId?.dateTime ? new Date(reg.eventId.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'TBD',
+          location: reg.eventId?.location
         })).filter(e => e.date);
         setStudentRegisteredEvents(events);
       }).catch(console.error);
@@ -57,12 +57,6 @@ function StudentTopBar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const studentUpdates = [
-    { id: 1, text: 'Venue changed for Web3 Hackathon 2026 to Innovation Lab.', time: '2 hours ago', read: false },
-    { id: 2, text: 'TechVerse Club accepted your application for Technical Lead.', time: '5 hours ago', read: false },
-    { id: 3, text: 'Entry passes are now available for AI & Machine Learning Workshop.', time: '1 day ago', read: true }
-  ];
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

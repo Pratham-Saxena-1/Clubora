@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { FileText, Clock, Briefcase, CheckCircle, Loader2, X, Upload } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 function StudentRecruitments() {
   const [vacancies, setVacancies] = useState([]);
   const [applied, setApplied] = useState({});
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
   
   // Application Modal state
   const [selectedVacancy, setSelectedVacancy] = useState(null);
@@ -19,17 +21,24 @@ function StudentRecruitments() {
   const { addToast } = useToast();
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (user?.id) {
+      fetchData();
+    }
+  }, [user]);
 
   const fetchData = async () => {
     try {
-      const vacRes = await api.get('/recruitments');
+      const [vacRes, appRes] = await Promise.all([
+        api.get('/recruitments'),
+        api.get(`/applications/student/${user.id}`)
+      ]);
       setVacancies(vacRes.data);
       
-      // Ideally we would fetch the user's applications here too
-      // const appRes = await api.get('/applications/student/me');
-      // Set applied based on appRes.data
+      const appliedMap = {};
+      appRes.data.forEach(app => {
+        appliedMap[app.recruitmentId?._id || app.recruitmentId] = true;
+      });
+      setApplied(appliedMap);
     } catch (err) {
       addToast('Failed to load recruitments', 'error');
     } finally {

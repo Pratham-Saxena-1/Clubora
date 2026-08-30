@@ -88,7 +88,7 @@ function StudentClubs() {
           subtitle={selectedClub.categories?.join(', ') || 'No categories'}
         />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', animation: 'fadeInUp 0.3s ease both' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '32px', animation: 'fadeInUp 0.3s ease both' }}>
           
           {/* About Us & Mission */}
           <section style={{ background: 'var(--bg-secondary)', padding: '40px', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255,255,255,0.03)', boxShadow: '0 4px 24px rgba(0,0,0,0.2)' }}>

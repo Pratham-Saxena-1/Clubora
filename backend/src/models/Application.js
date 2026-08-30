@@ -14,8 +14,11 @@ const applicationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Pending', 'Accepted', 'Rejected'],
+      enum: ['Pending', 'Shortlisted', 'Interviewed', 'Accepted', 'Rejected'],
       default: 'Pending',
+    },
+    position: {
+      type: String,
     },
     answers: [
       {
@@ -23,6 +26,11 @@ const applicationSchema = new mongoose.Schema(
         answer: String,
       },
     ],
+    interview: {
+      date: Date,
+      time: String,
+      link: String,
+    },
     resume: {
       type: String, // file path
     },

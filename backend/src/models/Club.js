@@ -25,6 +25,9 @@ const clubSchema = new mongoose.Schema(
     contactNumber: {
       type: String,
     },
+    instagram: {
+      type: String,
+    },
     establishedYear: {
       type: Number,
       default: new Date().getFullYear(),
@@ -34,7 +37,9 @@ const clubSchema = new mongoose.Schema(
         name: { type: String, required: true },
         role: { type: String, required: true },
         photoUrl: { type: String },
-        parentId: { type: mongoose.Schema.Types.ObjectId }
+        registrationNumber: { type: String },
+        contactNumber: { type: String },
+        level: { type: Number, default: 0 }
       }
     ]
   },

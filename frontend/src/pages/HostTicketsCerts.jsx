@@ -67,7 +67,25 @@ function HostTicketsCerts() {
     }
   };
 
-  const columns = ['Participant', 'Event', 'QR Entry Pass'];
+  const handleIssueCertificate = async (e, id, name) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('certificate', file);
+
+    try {
+      const { data } = await api.post(`/events/registrations/${id}/certificate`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setRegistrations(prev => prev.map(t => t._id === id ? { ...t, certificate: data.certificate } : t));
+      addToast(`Certificate issued for ${name}`, 'success');
+    } catch (err) {
+      addToast(`Failed to issue Certificate for ${name}`, 'error');
+    }
+  };
+
+  const columns = ['Participant', 'Event', 'QR Entry Pass', 'Certificate'];
 
   const renderRow = (ticket) => {
     const student = ticket.studentId || {};
@@ -92,7 +110,7 @@ function HostTicketsCerts() {
               <a href={`http://localhost:5000${ticket.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                 <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
                   <CheckCircle2 size={12} strokeWidth={2.5} />
-                  View Issued Pass
+                  View Pass
                 </span>
               </a>
             ) : (
@@ -105,6 +123,29 @@ function HostTicketsCerts() {
                 />
                 <Upload size={14} strokeWidth={2} />
                 Upload QR
+              </label>
+            )}
+          </div>
+        </td>
+        <td>
+          <div className="host-tickets__status-cell">
+            {ticket.certificate ? (
+              <a href={`http://localhost:5000${ticket.certificate}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
+                  <CheckCircle2 size={12} strokeWidth={2.5} />
+                  View Cert
+                </span>
+              </a>
+            ) : (
+              <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
+                <input 
+                  type="file" 
+                  accept="image/*,.pdf" 
+                  style={{ display: 'none' }} 
+                  onChange={(e) => handleIssueCertificate(e, ticket._id, student.name)} 
+                />
+                <Upload size={14} strokeWidth={2} />
+                Upload Cert
               </label>
             )}
           </div>

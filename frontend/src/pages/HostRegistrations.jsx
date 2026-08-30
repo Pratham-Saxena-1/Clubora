@@ -62,7 +62,7 @@ function HostRegistrations() {
       'Email': r.studentId?.email || 'N/A',
       'Event Name': r.eventId?.title || 'Unknown',
       'Registration Date': new Date(r.createdAt).toLocaleDateString(),
-      'Checked In': r.checkedIn ? 'Yes' : 'No'
+      'Payment Verified': r.paymentVerified ? 'Yes' : 'No'
     }));
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
@@ -71,14 +71,14 @@ function HostRegistrations() {
     addToast('Excel file downloaded', 'success');
   };
 
-  const handleCheckIn = async (id) => {
+  const handleVerifyPayment = async (id) => {
     try {
-      await api.put(`/events/registrations/${id}/check-in`);
-      setRegistrations(prev => prev.map(r => r._id === id ? { ...r, checkedIn: true } : r));
-      addToast('Participant checked in successfully!', 'success');
+      await api.put(`/events/registrations/${id}/payment`);
+      setRegistrations(prev => prev.map(r => r._id === id ? { ...r, paymentVerified: true } : r));
+      addToast('Payment verified successfully!', 'success');
       setModalData(null);
     } catch (err) {
-      addToast('Failed to check in participant', 'error');
+      addToast('Failed to verify payment', 'error');
     }
   };
 
@@ -103,9 +103,9 @@ function HostRegistrations() {
         <td className="host-registrations__event-name">{eventName}</td>
         <td className="host-registrations__date">{regDate}</td>
         <td>
-          {reg.checkedIn ? (
+          {reg.paymentVerified ? (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontSize: '13px', fontWeight: 600 }}>
-              <CheckCircle size={16} /> Checked In
+              <CheckCircle size={16} /> Verified
             </span>
           ) : (
             <button 
@@ -113,7 +113,7 @@ function HostRegistrations() {
               style={{ padding: '6px 12px', fontSize: '12px' }}
               onClick={() => setModalData(reg)}
             >
-              Check In
+              Verify Payment
             </button>
           )}
         </td>
@@ -125,7 +125,7 @@ function HostRegistrations() {
     <div className="host-registrations">
       <HostPageHeader
         title="Registration Ledger"
-        subtitle="Search, track, and manage student event registrations and check-ins."
+        subtitle="Search, track, and verify student event registrations and payments."
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
@@ -178,32 +178,38 @@ function HostRegistrations() {
         </>
       )}
 
-      {/* Check-In Modal */}
+      {/* Verify Payment Modal */}
       <HostModal
         isOpen={!!modalData}
         onClose={() => setModalData(null)}
-        title={`Check In Participant`}
+        title={`Verify Payment`}
         footer={
           <>
             <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setModalData(null)}>Cancel</button>
-            <button type="button" className="host-modal__btn host-modal__btn--primary" style={{ background: 'var(--success)', color: 'var(--bg-primary)' }} onClick={() => handleCheckIn(modalData._id)}>Confirm Check-In</button>
+            <button type="button" className="host-modal__btn host-modal__btn--primary" style={{ background: 'var(--success)', color: 'var(--bg-primary)' }} onClick={() => handleVerifyPayment(modalData._id)}>Confirm Payment</button>
           </>
         }
       >
         {modalData && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-              You are about to check in <strong>{modalData.studentId?.name}</strong> for the event <strong>{modalData.eventId?.title}</strong>.
+              You are about to verify payment for <strong>{modalData.studentId?.name}</strong> for the event <strong>{modalData.eventId?.title}</strong>.
             </p>
-            {modalData.answers && modalData.answers.length > 0 && (
+            {modalData.eventId?.isPaid && modalData.eventId?.fee > 0 && (
               <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
-                <h4 style={{ marginBottom: '12px', fontSize: '14px', color: 'var(--text-primary)' }}>Participant Details</h4>
-                {modalData.answers.map((ans, idx) => (
-                  <div key={idx} style={{ marginBottom: '8px' }}>
-                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>{ans.question}</span>
-                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{ans.answer}</span>
+                <h4 style={{ marginBottom: '12px', fontSize: '14px', color: 'var(--text-primary)' }}>Payment Verification Details</h4>
+                <div style={{ marginBottom: '8px' }}>
+                  <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Event Fee</span>
+                  <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 600 }}>${modalData.eventId.fee}</span>
+                </div>
+                {modalData.paymentScreenshot && (
+                  <div style={{ marginTop: '16px' }}>
+                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Student Uploaded Screenshot</span>
+                    <a href={`http://localhost:5000${modalData.paymentScreenshot}`} target="_blank" rel="noopener noreferrer">
+                      <img src={`http://localhost:5000${modalData.paymentScreenshot}`} alt="Payment Proof" style={{ width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }} />
+                    </a>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>

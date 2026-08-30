@@ -19,6 +19,7 @@ function HostClubProfile() {
   const [memberDetails, setMemberDetails] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoError, setPhotoError] = useState('');
+  const [uploadingGallery, setUploadingGallery] = useState(false);
   
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -101,36 +102,46 @@ function HostClubProfile() {
   };
 
   const openGallery = (evt) => {
-    if (evt.images && evt.images.length > 0) {
-      setGalleryEvent(evt);
-      setExpandedPhoto(null);
-    } else {
-      addToast('No images uploaded for this event yet.', 'info');
+    setGalleryEvent(evt);
+    setExpandedPhoto(null);
+  };
+
+  const handleUploadGallery = async (e) => {
+    e.preventDefault();
+    const files = e.target.galleryImages.files;
+    if (!files.length) return;
+    
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('galleryImages', files[i]);
+    }
+    
+    setUploadingGallery(true);
+    try {
+      const { data } = await api.post(`/events/${galleryEvent.id}/gallery`, formData);
+      const updatedImages = data.galleryImages.map(img => `http://localhost:5000${img}`);
+      setGalleryEvent(prev => ({ ...prev, images: updatedImages }));
+      
+      // Update pastEvents list
+      setPastEvents(prev => prev.map(p => p.id === galleryEvent.id ? { ...p, images: updatedImages } : p));
+      addToast('Images uploaded successfully', 'success');
+      e.target.reset();
+    } catch (err) {
+      addToast('Failed to upload images', 'error');
+    } finally {
+      setUploadingGallery(false);
     }
   };
 
-  const renderTree = (parentId = null) => {
-    const children = (clubInfo.teamMembers || []).filter(m => {
-      if (parentId === null) {
-        return !m.parentId;
-      }
-      return m.parentId === parentId;
+  const getMembersByLevel = () => {
+    const levels = {};
+    (clubInfo?.teamMembers || []).forEach(m => {
+      const lvl = m.level || 1;
+      if (!levels[lvl]) levels[lvl] = [];
+      levels[lvl].push(m);
     });
-    if (!children.length) return null;
-    return (
-      <ul>
-        {children.map(member => (
-          <li key={member._id}>
-            <div className="hierarchy-tree__content" onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
-              {member.name}
-            </div>
-            {renderTree(member._id)}
-          </li>
-        ))}
-      </ul>
-    );
+    return Object.keys(levels).sort((a,b) => parseInt(a) - parseInt(b)).map(k => levels[k]);
   };
-
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
@@ -166,6 +177,10 @@ function HostClubProfile() {
               <label className="host-modal__label">Contact Number (Optional)</label>
               <input name="contactNumber" type="tel" className="host-modal__input" placeholder="e.g. +1 555-0123" />
             </div>
+            <div className="host-modal__field" style={{ marginBottom: 0 }}>
+              <label className="host-modal__label">Instagram Handle (Optional)</label>
+              <input name="instagram" type="text" className="host-modal__input" placeholder="e.g. @chessclub" />
+            </div>
             <button type="submit" className="host-modal__btn host-modal__btn--primary" style={{ marginTop: '16px' }}>
               Register Club
             </button>
@@ -189,15 +204,24 @@ function HostClubProfile() {
           <section className="host-club-profile__card">
             <h2 className="host-club-profile__card-title">Manage Club Team Hierarchy</h2>
             <div className="host-club-profile__hierarchy">
-              <div className="hierarchy-tree">
-                <ul>
-                  <li>
-                    <div className="hierarchy-tree__content hierarchy-tree__content--root" onClick={() => setMemberDetails({ name: clubInfo.hostId?.name || 'You', role: 'President' })}>
-                      {clubInfo.hostId?.name || 'You (President)'}
+              <div className="hierarchy-levels" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div className="hierarchy-tree__content hierarchy-tree__content--root" onClick={() => setMemberDetails({ name: clubInfo.hostId?.name || 'You', role: 'President' })}>
+                    {clubInfo.hostId?.name || 'You (President)'}
+                  </div>
+                </div>
+                {getMembersByLevel().map((levelMembers, idx) => (
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ width: '2px', height: '32px', background: 'var(--border)' }}></div>
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      {levelMembers.map(member => (
+                        <div key={member._id} className="hierarchy-tree__content" onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
+                          {member.name} <br/> <span style={{fontSize: '10px', color: 'var(--text-secondary)'}}>{member.role}</span>
+                        </div>
+                      ))}
                     </div>
-                    {renderTree(null)}
-                  </li>
-                </ul>
+                  </div>
+                ))}
               </div>
               <button className="host-club-profile__add-member" onClick={() => setIsModalOpen(true)} style={{ marginTop: 'var(--space-xl)' }}>
                 <Plus size={20} strokeWidth={2} />
@@ -287,6 +311,16 @@ function HostClubProfile() {
                   <span>Phone</span>
                 </a>
               )}
+              {clubInfo.instagram && (
+                <a href={`https://instagram.com/${clubInfo.instagram.replace('@', '')}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer">
+                  <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                  </svg>
+                  <span>Instagram</span>
+                </a>
+              )}
             </div>
           </section>
         </div>
@@ -315,14 +349,19 @@ function HostClubProfile() {
               <input type="text" name="role" className="host-modal__input" placeholder="e.g. Technical Lead" required />
             </div>
           </div>
-          <div className="host-modal__field" style={{ marginTop: 'var(--space-md)' }}>
-            <label className="host-modal__label">Reports To (Optional)</label>
-            <select name="parentId" className="host-modal__input">
-              <option value="">President (Top Level)</option>
-              {(clubInfo?.teamMembers || []).map(m => (
-                <option key={m._id} value={m._id}>{m.name} ({m.role})</option>
-              ))}
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Registration No.</label>
+              <input type="text" name="registrationNumber" className="host-modal__input" placeholder="e.g. 21BCE0001" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Contact No.</label>
+              <input type="text" name="contactNumber" className="host-modal__input" placeholder="e.g. 9876543210" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Hierarchy Level</label>
+              <input type="number" name="level" className="host-modal__input" placeholder="e.g. 1" min="1" required />
+            </div>
           </div>
           <div className="host-modal__field" style={{ marginTop: 'var(--space-md)' }}>
             <label className="host-modal__label">Photo Upload (JPEG/JPG only, Optional)</label>
@@ -364,29 +403,43 @@ function HostClubProfile() {
                 <img src={expandedPhoto} alt="Expanded view" className="arc-gallery-expanded-img" />
               </div>
             ) : (
-              <div className="arc-gallery">
-                {galleryEvent.images?.map((img, idx) => {
-                  const total = galleryEvent.images.length;
-                  const middle = (total - 1) / 2;
-                  const offset = idx - middle;
-                  const rotation = offset * 15;
-                  const translationY = Math.abs(offset) * 15;
-                  
-                  return (
-                    <img 
-                      key={idx} 
-                      src={img} 
-                      alt={`Event photo ${idx+1}`} 
-                      className="arc-gallery__item"
-                      style={{
-                        '--rot': `${rotation}deg`,
-                        '--transY': `${translationY}px`,
-                        zIndex: total - Math.abs(offset)
-                      }}
-                      onClick={() => setExpandedPhoto(img)}
-                    />
-                  );
-                })}
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <form onSubmit={handleUploadGallery} style={{ marginBottom: 'var(--space-lg)', display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+                  <input type="file" name="galleryImages" multiple accept="image/jpeg, image/jpg" className="host-modal__input" style={{ flex: 1, padding: '8px' }} required />
+                  <button type="submit" className="host-modal__btn host-modal__btn--primary" disabled={uploadingGallery}>
+                    {uploadingGallery ? <Loader2 size={16} className="spin" /> : 'Upload Photos'}
+                  </button>
+                </form>
+                {galleryEvent.images?.length > 0 ? (
+                  <div className="arc-gallery" style={{ flex: 1, minHeight: '300px' }}>
+                    {galleryEvent.images?.map((img, idx) => {
+                      const total = galleryEvent.images.length;
+                      const middle = (total - 1) / 2;
+                      const offset = idx - middle;
+                      const rotation = offset * 15;
+                      const translationY = Math.abs(offset) * 15;
+                      
+                      return (
+                        <img 
+                          key={idx} 
+                          src={img} 
+                          alt={`Event photo ${idx+1}`} 
+                          className="arc-gallery__item"
+                          style={{
+                            '--rot': `${rotation}deg`,
+                            '--transY': `${translationY}px`,
+                            zIndex: total - Math.abs(offset)
+                          }}
+                          onClick={() => setExpandedPhoto(img)}
+                        />
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', minHeight: '200px' }}>
+                    No photos uploaded yet.
+                  </div>
+                )}
               </div>
             )}
           </div>

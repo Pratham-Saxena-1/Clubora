@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, checkInRegistration, uploadQrTicket, getEventRegistrations, getClubRegistrations, uploadGalleryImage } = require('../controllers/eventController');
+const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, verifyPayment, uploadQrTicket, uploadCertificate, getEventRegistrations, getClubRegistrations, uploadGalleryImage, deleteEvent } = require('../controllers/eventController');
 const { authenticate, authorizeOwner, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
@@ -17,6 +17,8 @@ const eventSchema = z.object({
   location: z.string().optional(),
   dateTime: z.string().datetime().or(z.date()),
   capacity: z.number().optional(),
+  isPaid: z.boolean().optional(),
+  fee: z.number().optional(),
 });
 
 const updateEventSchema = eventSchema.omit({ clubId: true }).partial();
@@ -53,15 +55,17 @@ router.get('/:id', getEvent);
 router.get('/registrations/club', authenticate, authorize('Host'), getClubRegistrations);
 router.post('/', authenticate, authorize('Host'), authorizeOwner(isClubOwner), validate(eventSchema), createEvent);
 router.put('/:id', authenticate, authorizeOwner(isEventOwner), validate(updateEventSchema), updateEvent);
+router.delete('/:id', authenticate, authorizeOwner(isEventOwner), deleteEvent);
 router.get('/:id/registrations', authenticate, authorizeOwner(isEventOwner), getEventRegistrations);
-router.post('/:id/gallery', authenticate, authorizeOwner(isEventOwner), upload.single('galleryImage'), uploadGalleryImage);
+router.post('/:id/gallery', authenticate, authorizeOwner(isEventOwner), upload.array('galleryImages', 10), uploadGalleryImage);
 
 // Student Registration
 router.get('/registrations/student/me', authenticate, authorize('Student'), getMyRegistrations);
-router.post('/:id/register', authenticate, authorize('Student'), registerForEvent);
+router.post('/:id/register', authenticate, authorize('Student'), upload.single('paymentScreenshot'), registerForEvent);
 
-// Check-in and QR ticket (Host Action on Registration)
-router.put('/registrations/:id/check-in', authenticate, authorizeOwner(isRegistrationOwner), checkInRegistration);
+// Payment and QR ticket (Host Action on Registration)
+router.put('/registrations/:id/payment', authenticate, authorizeOwner(isRegistrationOwner), verifyPayment);
 router.post('/registrations/:id/qr-ticket', authenticate, authorizeOwner(isRegistrationOwner), upload.single('qrTicket'), uploadQrTicket);
+router.post('/registrations/:id/certificate', authenticate, authorizeOwner(isRegistrationOwner), upload.single('certificate'), uploadCertificate);
 
 module.exports = router;

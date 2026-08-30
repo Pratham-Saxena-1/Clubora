@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getProfile, updateProfile, uploadProfilePic } = require('../controllers/userController');
+const { getProfile, updateProfile, uploadProfilePic, deleteAccount } = require('../controllers/userController');
 const { authenticate } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const upload = require('../middleware/upload');
@@ -16,5 +16,6 @@ const updateProfileSchema = z.object({
 router.get('/:id', authenticate, getProfile);
 router.put('/:id', authenticate, validate(updateProfileSchema), updateProfile);
 router.post('/:id/profile-pic', authenticate, upload.single('profilePic'), uploadProfilePic);
+router.delete('/:id', authenticate, deleteAccount);
 
 module.exports = router;

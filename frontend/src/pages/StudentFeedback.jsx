@@ -16,9 +16,20 @@ function StudentFeedback() {
 
   const fetchPastEvents = async () => {
     try {
-      const { data } = await api.get('/events/registrations/student/me');
+      const [{ data: regs }, { data: tickets }] = await Promise.all([
+        api.get('/events/registrations/student/me'),
+        api.get('/support/me')
+      ]);
       // Assume all registered events are open for feedback for simplicity
-      setEvents(data.map(reg => reg.eventId).filter(Boolean));
+      setEvents(regs.map(reg => reg.eventId).filter(Boolean));
+      
+      const submittedFeedbacks = {};
+      tickets.forEach(ticket => {
+        if (ticket.type === 'Feedback' && ticket.eventId) {
+          submittedFeedbacks[ticket.eventId] = { submitted: true, text: ticket.description };
+        }
+      });
+      setFeedbacks(submittedFeedbacks);
     } catch (err) {
       addToast('Failed to load your past events', 'error');
     } finally {
@@ -53,7 +64,8 @@ function StudentFeedback() {
       await api.post('/support', {
         type: 'Feedback',
         subject: `Feedback for ${event.title}`,
-        description: description
+        description: description,
+        eventId: event._id
       });
 
       setFeedbacks(prev => ({

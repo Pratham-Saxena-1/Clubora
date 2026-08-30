@@ -10,8 +10,8 @@ function HostRecruitment() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [vacancies, setVacancies] = useState([]);
   const [club, setClub] = useState(null);
-  const [questions, setQuestions] = useState([]);
-  const [newQuestion, setNewQuestion] = useState('');
+  const [positions, setPositions] = useState([]);
+  const [newPosition, setNewPosition] = useState('');
   
   const { addToast } = useToast();
 
@@ -44,7 +44,7 @@ function HostRecruitment() {
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
     payload.clubId = club._id;
-    payload.questions = questions;
+    payload.positions = positions;
     
     // Convert deadline to ISO Date
     if (payload.deadline) {
@@ -55,22 +55,22 @@ function HostRecruitment() {
       await api.post('/recruitments', payload);
       addToast('Vacancy published successfully!', 'success');
       setIsModalOpen(false);
-      setQuestions([]);
+      setPositions([]);
       fetchClubAndVacancies();
     } catch (err) {
       addToast('Failed to publish vacancy', 'error');
     }
   };
 
-  const handleAddQuestion = () => {
-    if (newQuestion.trim()) {
-      setQuestions([...questions, newQuestion.trim()]);
-      setNewQuestion('');
+  const handleAddPosition = () => {
+    if (newPosition.trim()) {
+      setPositions([...positions, newPosition.trim()]);
+      setNewPosition('');
     }
   };
 
-  const handleRemoveQuestion = (idx) => {
-    setQuestions(questions.filter((_, i) => i !== idx));
+  const handleRemovePosition = (idx) => {
+    setPositions(positions.filter((_, i) => i !== idx));
   };
 
   return (
@@ -121,6 +121,11 @@ function HostRecruitment() {
               <div key={vacancy._id} className="host-recruitment__vacancy-card">
                 <h3 className="host-recruitment__vacancy-title">{vacancy.title}</h3>
                 <p className="host-recruitment__vacancy-desc">{vacancy.description}</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '12px 0' }}>
+                  {(vacancy.positions || []).map((pos, idx) => (
+                    <span key={idx} style={{ fontSize: '10px', background: 'var(--bg-secondary)', padding: '2px 8px', borderRadius: '12px', border: '1px solid var(--border)' }}>{pos}</span>
+                  ))}
+                </div>
                 <div className="host-recruitment__vacancy-meta">
                   <span style={{ background: 'var(--accent-soft)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>{vacancy.type || 'Role'}</span>
                   <span>•</span>
@@ -168,23 +173,23 @@ function HostRecruitment() {
           </div>
 
           <div className="host-modal__field">
-            <label className="host-modal__label">Custom Application Questions (Optional)</label>
+            <label className="host-modal__label">Open Positions</label>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
               <input 
                 type="text" 
                 className="host-modal__input" 
-                placeholder="e.g. Why do you want this role?"
-                value={newQuestion}
-                onChange={(e) => setNewQuestion(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddQuestion(); } }}
+                placeholder="e.g. Graphic Designer"
+                value={newPosition}
+                onChange={(e) => setNewPosition(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPosition(); } }}
               />
-              <button type="button" onClick={handleAddQuestion} style={{ padding: '0 16px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}>Add</button>
+              <button type="button" onClick={handleAddPosition} style={{ padding: '0 16px', background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-primary)' }}>Add</button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {questions.map((q, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)' }}>
-                  <span style={{ fontSize: '14px' }}>{q}</span>
-                  <button type="button" onClick={() => handleRemoveQuestion(idx)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer' }}><X size={16} /></button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {positions.map((p, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)' }}>
+                  <span style={{ fontSize: '14px' }}>{p}</span>
+                  <button type="button" onClick={() => handleRemovePosition(idx)} style={{ color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={14} /></button>
                 </div>
               ))}
             </div>
