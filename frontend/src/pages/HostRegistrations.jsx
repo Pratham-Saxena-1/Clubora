@@ -20,6 +20,7 @@ function HostRegistrations() {
   const [eventFilter, setEventFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [modalData, setModalData] = useState(null);
+  const [deleteModalData, setDeleteModalData] = useState(null);
   
   useEffect(() => {
     fetchRegistrations();
@@ -82,7 +83,18 @@ function HostRegistrations() {
     }
   };
 
-  const columns = ['Participant', 'Event Name', 'Registration Date', 'Status'];
+  const handleDeleteRegistration = async (id) => {
+    try {
+      await api.delete(`/events/registrations/${id}`);
+      setRegistrations(prev => prev.filter(r => r._id !== id));
+      addToast('Registration deleted successfully', 'success');
+      setDeleteModalData(null);
+    } catch (err) {
+      addToast('Failed to delete registration', 'error');
+    }
+  };
+
+  const columns = ['Participant', 'Event Name', 'Registration Date', 'Status', 'Actions'];
 
   const renderRow = (reg) => {
     const student = reg.studentId || {};
@@ -116,6 +128,20 @@ function HostRegistrations() {
               Verify Payment
             </button>
           )}
+        </td>
+        <td>
+          <button 
+            className="host-applicants__reject-btn" 
+            aria-label="Delete"
+            onClick={() => setDeleteModalData(reg)}
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
         </td>
       </tr>
     );
@@ -205,14 +231,36 @@ function HostRegistrations() {
                 {modalData.paymentScreenshot && (
                   <div style={{ marginTop: '16px' }}>
                     <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Student Uploaded Screenshot</span>
-                    <a href={`http://localhost:5000${modalData.paymentScreenshot}`} target="_blank" rel="noopener noreferrer">
-                      <img src={`http://localhost:5000${modalData.paymentScreenshot}`} alt="Payment Proof" style={{ width: '100%', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }} />
+                    <a href={`http://localhost:5000${modalData.paymentScreenshot}`} target="_blank" rel="noopener noreferrer" style={{ display: 'block', padding: '8px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', transition: 'transform 0.2s, box-shadow 0.2s', textDecoration: 'none' }} onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'; }} onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
+                      <img src={`http://localhost:5000${modalData.paymentScreenshot}`} alt="Payment Proof" style={{ width: '100%', height: '200px', objectFit: 'contain', borderRadius: 'var(--radius-sm)' }} />
+                      <div style={{ padding: '8px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <FileText size={14} /> View Full Image
+                      </div>
                     </a>
                   </div>
                 )}
               </div>
             )}
           </div>
+        )}
+      </HostModal>
+
+      {/* Delete Confirmation Modal */}
+      <HostModal
+        isOpen={!!deleteModalData}
+        onClose={() => setDeleteModalData(null)}
+        title="Delete Registration"
+        footer={
+          <>
+            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setDeleteModalData(null)}>Cancel</button>
+            <button type="button" className="host-modal__btn host-modal__btn--primary" style={{ background: 'var(--danger)', color: '#fff' }} onClick={() => handleDeleteRegistration(deleteModalData._id)}>Delete</button>
+          </>
+        }
+      >
+        {deleteModalData && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
+            Are you sure you want to delete the registration for <strong>{deleteModalData.studentId?.name}</strong> for <strong>{deleteModalData.eventId?.title}</strong>? This action cannot be undone.
+          </p>
         )}
       </HostModal>
     </div>

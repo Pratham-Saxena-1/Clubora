@@ -27,11 +27,6 @@ const recruitmentSchema = new mongoose.Schema(
         type: String,
       },
     ],
-    positions: [
-      {
-        type: String,
-      },
-    ],
   },
   { timestamps: true }
 );

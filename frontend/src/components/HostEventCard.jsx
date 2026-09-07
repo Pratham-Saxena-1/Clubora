@@ -51,7 +51,12 @@ function HostEventCard({ event, onEdit, onDelete }) {
       </div>
 
       <div className="host-event-card__body">
-        <h3 className="host-event-card__title">{event.title}</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <h3 className="host-event-card__title" style={{ flex: 1, paddingRight: '8px' }}>{event.title}</h3>
+          <span style={{ background: event.isPaid ? 'var(--warning)' : 'var(--success)', color: '#fff', fontSize: '12px', fontWeight: '600', padding: '2px 8px', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+            {event.isPaid && event.fee > 0 ? `₹${event.fee}` : 'Free'}
+          </span>
+        </div>
         <div className="host-event-card__date">
           <Calendar size={14} strokeWidth={1.8} />
           <span>{formattedDate} &middot; {formattedTime}</span>

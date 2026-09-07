@@ -114,6 +114,12 @@ function HostApplicants() {
         </td>
         <td>
           <span className="host-applicants__role-badge">{roleTitle}</span>
+          {applicant.interview && (
+            <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+              <strong>Interview:</strong> {new Date(applicant.interview.date).toLocaleDateString()} at {applicant.interview.time} <br/>
+              <strong>Location:</strong> {applicant.interview.link}
+            </div>
+          )}
         </td>
         <td className="host-applicants__date">{subDate}</td>
         <td>

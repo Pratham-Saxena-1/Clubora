@@ -171,9 +171,11 @@ function StudentSettings() {
         <button 
           type="button" 
           onClick={handleDeleteAccount}
-          style={{ background: 'var(--error)', color: '#fff', padding: '10px 20px', borderRadius: 'var(--radius-md)', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+          style={{ background: 'var(--danger)', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-md)', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(220, 38, 38, 0.2)' }}
+          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)'; }}
+          onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.2)'; }}
         >
-          <AlertTriangle size={16} /> Delete Account
+          <AlertTriangle size={18} strokeWidth={2.5} /> Delete Account
         </button>
       </section>
     </div>

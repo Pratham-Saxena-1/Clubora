@@ -67,5 +67,15 @@ router.post('/:id/register', authenticate, authorize('Student'), upload.single('
 router.put('/registrations/:id/payment', authenticate, authorizeOwner(isRegistrationOwner), verifyPayment);
 router.post('/registrations/:id/qr-ticket', authenticate, authorizeOwner(isRegistrationOwner), upload.single('qrTicket'), uploadQrTicket);
 router.post('/registrations/:id/certificate', authenticate, authorizeOwner(isRegistrationOwner), upload.single('certificate'), uploadCertificate);
+router.delete('/registrations/:id', authenticate, authorizeOwner(isRegistrationOwner), async (req, res, next) => {
+  try {
+    const reg = await EventRegistration.findById(req.params.id);
+    if (!reg) return res.status(404).json({ error: { message: 'Registration not found' } });
+    await EventRegistration.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Registration deleted' });
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;

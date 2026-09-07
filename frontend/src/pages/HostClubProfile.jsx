@@ -14,6 +14,7 @@ function HostClubProfile() {
   const [pastEvents, setPastEvents] = useState([]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPastEventModalOpen, setIsPastEventModalOpen] = useState(false);
   const [galleryEvent, setGalleryEvent] = useState(null);
   const [expandedPhoto, setExpandedPhoto] = useState(null);
   const [memberDetails, setMemberDetails] = useState(null);
@@ -133,6 +134,25 @@ function HostClubProfile() {
     }
   };
 
+  const handleCreatePastEvent = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const payload = Object.fromEntries(formData);
+    payload.clubId = clubInfo._id;
+    payload.isPaid = false;
+    payload.fee = 0;
+    payload.dateTime = new Date(payload.date).toISOString();
+    
+    try {
+      await api.post('/events', payload);
+      addToast('Past event created successfully!', 'success');
+      setIsPastEventModalOpen(false);
+      fetchClub(); // Refresh list
+    } catch (err) {
+      addToast('Failed to create past event', 'error');
+    }
+  };
+
   const getMembersByLevel = () => {
     const levels = {};
     (clubInfo?.teamMembers || []).forEach(m => {
@@ -232,7 +252,12 @@ function HostClubProfile() {
 
           {/* Past Events Gallery View */}
           <section className="host-club-profile__card">
-            <h2 className="host-club-profile__card-title">Past Events Showcase</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 className="host-club-profile__card-title" style={{ marginBottom: 0 }}>Past Events Showcase</h2>
+              <button className="host-modal__btn host-modal__btn--primary" style={{ padding: '6px 12px', fontSize: '13px', display: 'flex', gap: '6px', alignItems: 'center' }} onClick={() => setIsPastEventModalOpen(true)}>
+                <Plus size={14} /> Add Past Event
+              </button>
+            </div>
             {pastEvents.length > 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--space-md)' }}>
                 {pastEvents.map(evt => (
@@ -334,11 +359,11 @@ function HostClubProfile() {
         footer={
           <>
             <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
-            <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={handleAddMember}>Add Member</button>
+            <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={() => document.getElementById('add-member-form').requestSubmit()}>Add Member</button>
           </>
         }
       >
-        <form onSubmit={handleAddMember}>
+        <form id="add-member-form" onSubmit={handleAddMember}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-md)' }}>
             <div className="host-modal__field" style={{ marginBottom: '0' }}>
               <label className="host-modal__label">Full Name</label>
@@ -444,6 +469,35 @@ function HostClubProfile() {
             )}
           </div>
         )}
+      </HostModal>
+
+      {/* Create Past Event Modal */}
+      <HostModal
+        isOpen={isPastEventModalOpen}
+        onClose={() => setIsPastEventModalOpen(false)}
+        title="Add Past Event"
+        footer={
+          <>
+            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setIsPastEventModalOpen(false)}>Cancel</button>
+            <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={() => document.getElementById('past-event-form').requestSubmit()}>Create Event</button>
+          </>
+        }
+      >
+        <form id="past-event-form" onSubmit={handleCreatePastEvent} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <div className="host-modal__field" style={{ marginBottom: 0 }}>
+            <label className="host-modal__label">Event Title</label>
+            <input type="text" name="title" className="host-modal__input" placeholder="e.g. Summer Festival 2023" required />
+          </div>
+          <div className="host-modal__field" style={{ marginBottom: 0 }}>
+            <label className="host-modal__label">Date (Must be in the past)</label>
+            <input type="date" name="date" className="host-modal__input" max={new Date().toISOString().split('T')[0]} required />
+          </div>
+          <div className="host-modal__field" style={{ marginBottom: 0 }}>
+            <label className="host-modal__label">Description</label>
+            <textarea name="description" className="host-modal__textarea" placeholder="Describe the event..." rows={3} required />
+          </div>
+          <input type="hidden" name="location" value="Past Event" />
+        </form>
       </HostModal>
 
       {/* Member Details Modal */}

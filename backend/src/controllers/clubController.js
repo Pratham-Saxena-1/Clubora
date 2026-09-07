@@ -81,7 +81,7 @@ exports.updateClub = async (req, res, next) => {
 
 exports.addTeamMember = async (req, res, next) => {
   try {
-    const { name, role, parentId } = req.body;
+    const { name, role, registrationNumber, contactNumber, level } = req.body;
     let photoUrl = undefined;
     if (req.file) {
       photoUrl = `/uploads/team-members/${req.file.filename}`;
@@ -91,7 +91,14 @@ exports.addTeamMember = async (req, res, next) => {
     if (!club) return res.status(404).json({ error: { message: 'Club not found' } });
     if (club.hostId.toString() !== req.user.id) return res.status(403).json({ error: { message: 'Forbidden' } });
 
-    club.teamMembers.push({ name, role, parentId: parentId || undefined, photoUrl });
+    club.teamMembers.push({ 
+      name, 
+      role, 
+      registrationNumber, 
+      contactNumber, 
+      level: level ? parseInt(level) : 1,
+      photoUrl 
+    });
     await club.save();
     res.status(201).json(club);
   } catch (error) {
