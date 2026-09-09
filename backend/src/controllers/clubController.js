@@ -160,3 +160,29 @@ exports.removeMember = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.createGallery = async (req, res, next) => {
+  try {
+    const { title, date, description } = req.body;
+    const club = await Club.findById(req.params.id);
+    if (!club) return res.status(404).json({ error: { message: 'Club not found' } });
+    if (club.hostId.toString() !== req.user.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      images = req.files.map(file => `/uploads/gallery/${file.filename}`);
+    }
+
+    club.galleries.push({
+      title,
+      date: new Date(date),
+      description,
+      images
+    });
+
+    await club.save();
+    res.status(201).json(club);
+  } catch (error) {
+    next(error);
+  }
+};

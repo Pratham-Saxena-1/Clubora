@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getClubs, getClub, getMyClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember, addTeamMember } = require('../controllers/clubController');
+const { getClubs, getClub, getMyClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember, addTeamMember, createGallery } = require('../controllers/clubController');
 const { authenticate, authorize, authorizeOwner } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const upload = require('../middleware/upload');
@@ -37,5 +37,6 @@ router.post('/:id/team-members', authenticate, authorizeOwner(isClubOwner), uplo
 router.get('/:id/members', authenticate, getMembers);
 router.post('/:id/members', authenticate, authorizeOwner(isClubOwner), validate(memberSchema), addMember);
 router.delete('/:id/members/:userId', authenticate, authorizeOwner(isClubOwner), removeMember);
+router.post('/:id/galleries', authenticate, authorizeOwner(isClubOwner), upload.array('galleryImages', 10), createGallery);
 
 module.exports = router;

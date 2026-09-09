@@ -41,6 +41,14 @@ const clubSchema = new mongoose.Schema(
         contactNumber: { type: String },
         level: { type: Number, default: 0 }
       }
+    ],
+    galleries: [
+      {
+        title: { type: String, required: true },
+        date: { type: Date, required: true },
+        description: { type: String },
+        images: [{ type: String }]
+      }
     ]
   },
   { timestamps: true }

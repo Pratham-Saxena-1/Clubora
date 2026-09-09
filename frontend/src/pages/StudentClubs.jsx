@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, Calendar, ArrowLeft, Image as ImageIcon, Mail, ChevronRight, Search, Loader2, Phone } from 'lucide-react';
+import { Users, Calendar, ArrowLeft, Image as ImageIcon, Mail, ChevronRight, Search, Loader2, Phone, X } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import HostModal from '../components/HostModal';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
@@ -9,25 +10,15 @@ function StudentClubs() {
   const [selectedClub, setSelectedClub] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [pastEvents, setPastEvents] = useState([]);
+  const [galleryEvent, setGalleryEvent] = useState(null);
+  const [expandedPhoto, setExpandedPhoto] = useState(null);
   const { addToast } = useToast();
+
+
 
   useEffect(() => {
     fetchClubs();
   }, []);
-
-  useEffect(() => {
-    if (selectedClub) {
-      api.get(`/events?clubId=${selectedClub._id}`).then(res => {
-        const past = res.data.filter(e => new Date(e.date) < new Date());
-        setPastEvents(past.map(evt => ({
-          id: evt._id,
-          title: evt.title,
-          images: evt.galleryImages?.map(img => `http://localhost:5000${img}`) || []
-        })));
-      }).catch(console.error);
-    }
-  }, [selectedClub]);
 
   const fetchClubs = async () => {
     try {
@@ -70,6 +61,13 @@ function StudentClubs() {
   };
 
   if (selectedClub) {
+    const pastEvents = (selectedClub.galleries || []).map(g => ({
+      id: g._id,
+      title: g.title,
+      date: g.date,
+      images: g.images?.map(img => `http://localhost:5000${img}`) || []
+    }));
+
     // Detailed Profile View
     return (
       <div className="host-dashboard">
@@ -115,7 +113,8 @@ function StudentClubs() {
                   {pastEvents.map(evt => (
                     <div 
                       key={evt.id} 
-                      style={{ position: 'relative', height: '140px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)' }}
+                      style={{ position: 'relative', height: '140px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer' }}
+                      onClick={() => setGalleryEvent(evt)}
                     >
                       {evt.images && evt.images.length > 0 ? (
                         <>
@@ -184,6 +183,59 @@ function StudentClubs() {
             </section>
           </div>
         </div>
+
+        {/* Gallery Modal */}
+        <HostModal
+          isOpen={!!galleryEvent}
+          onClose={() => { setGalleryEvent(null); setExpandedPhoto(null); }}
+          title={galleryEvent?.title}
+        >
+          {galleryEvent && (
+            <div className="arc-gallery-wrapper">
+              {expandedPhoto ? (
+                <div className="arc-gallery-expanded">
+                  <button className="arc-gallery-close-btn" onClick={() => setExpandedPhoto(null)}>
+                    <X size={24} color="#fff" />
+                  </button>
+                  <img src={expandedPhoto} alt="Expanded view" className="arc-gallery-expanded-img" />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  {galleryEvent.images?.length > 0 ? (
+                    <div className="arc-gallery" style={{ flex: 1, minHeight: '300px' }}>
+                      {galleryEvent.images?.map((img, idx) => {
+                        const total = galleryEvent.images.length;
+                        const middle = (total - 1) / 2;
+                        const offset = idx - middle;
+                        const rotation = offset * 15;
+                        const translationY = Math.abs(offset) * 15;
+                        
+                        return (
+                          <img 
+                            key={idx} 
+                            src={img} 
+                            alt={`Event photo ${idx+1}`} 
+                            className="arc-gallery__item"
+                            style={{
+                              '--rot': `${rotation}deg`,
+                              '--transY': `${translationY}px`,
+                              zIndex: total - Math.abs(offset)
+                            }}
+                            onClick={() => setExpandedPhoto(img)}
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', minHeight: '200px' }}>
+                      No photos uploaded yet.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </HostModal>
       </div>
     );
   }

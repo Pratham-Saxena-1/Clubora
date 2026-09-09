@@ -34,12 +34,12 @@ function HostClubProfile() {
       const { data } = await api.get('/clubs/my-club');
       setClubInfo(data);
       
-      const eventsRes = await api.get(`/events?clubId=${data._id}`);
-      const past = eventsRes.data.filter(e => new Date(e.date) < new Date());
-      setPastEvents(past.map(evt => ({
-        id: evt._id,
-        title: evt.title,
-        images: evt.galleryImages?.map(img => `http://localhost:5000${img}`) || []
+      const past = data.galleries || [];
+      setPastEvents(past.map(g => ({
+        id: g._id,
+        title: g.title,
+        date: g.date,
+        images: g.images?.map(img => `http://localhost:5000${img}`) || []
       })));
       
     } catch (err) {
@@ -107,32 +107,7 @@ function HostClubProfile() {
     setExpandedPhoto(null);
   };
 
-  const handleUploadGallery = async (e) => {
-    e.preventDefault();
-    const files = e.target.galleryImages.files;
-    if (!files.length) return;
-    
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append('galleryImages', files[i]);
-    }
-    
-    setUploadingGallery(true);
-    try {
-      const { data } = await api.post(`/events/${galleryEvent.id}/gallery`, formData);
-      const updatedImages = data.galleryImages.map(img => `http://localhost:5000${img}`);
-      setGalleryEvent(prev => ({ ...prev, images: updatedImages }));
-      
-      // Update pastEvents list
-      setPastEvents(prev => prev.map(p => p.id === galleryEvent.id ? { ...p, images: updatedImages } : p));
-      addToast('Images uploaded successfully', 'success');
-      e.target.reset();
-    } catch (err) {
-      addToast('Failed to upload images', 'error');
-    } finally {
-      setUploadingGallery(false);
-    }
-  };
+  // handleUploadGallery removed since we upload images on gallery creation
 
   const handleCreatePastEvent = async (e) => {
     e.preventDefault();
@@ -140,30 +115,18 @@ function HostClubProfile() {
     const fileInput = e.target.galleryImages;
     const files = fileInput ? fileInput.files : [];
     
-    const payload = Object.fromEntries(formData);
-    delete payload.galleryImages;
-    payload.clubId = clubInfo._id;
-    payload.isPaid = false;
-    payload.fee = 0;
-    payload.dateTime = new Date(payload.date).toISOString();
+    // We append the title, date, description, and images to a single FormData
+    // Since formData already has title, date, description, we just ensure it's a FormData object
+    // Wait, the form action has files in it already if it's multipart/form-data.
     
     try {
-      const res = await api.post('/events', payload);
-      const newEvent = res.data;
+      await api.post(`/clubs/${clubInfo._id}/galleries`, formData);
       
-      if (files.length > 0) {
-        const imgFormData = new FormData();
-        for (let i = 0; i < files.length; i++) {
-          imgFormData.append('galleryImages', files[i]);
-        }
-        await api.post(`/events/${newEvent._id}/gallery`, imgFormData);
-      }
-      
-      addToast('Past event created successfully!', 'success');
+      addToast('Gallery created successfully!', 'success');
       setIsPastEventModalOpen(false);
       fetchClub(); // Refresh list
     } catch (err) {
-      addToast('Failed to create past event', 'error');
+      addToast('Failed to create gallery', 'error');
     }
   };
 
@@ -436,12 +399,7 @@ function HostClubProfile() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                <form onSubmit={handleUploadGallery} style={{ marginBottom: 'var(--space-lg)', display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
-                  <input type="file" name="galleryImages" multiple accept="image/jpeg, image/jpg" className="host-modal__input" style={{ flex: 1, padding: '8px' }} required />
-                  <button type="submit" className="host-modal__btn host-modal__btn--primary" disabled={uploadingGallery}>
-                    {uploadingGallery ? <Loader2 size={16} className="spin" /> : 'Upload Photos'}
-                  </button>
-                </form>
+                {/* Upload form removed */}
                 {galleryEvent.images?.length > 0 ? (
                   <div className="arc-gallery" style={{ flex: 1, minHeight: '300px' }}>
                     {galleryEvent.images?.map((img, idx) => {
@@ -486,7 +444,7 @@ function HostClubProfile() {
         footer={
           <>
             <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setIsPastEventModalOpen(false)}>Cancel</button>
-            <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={() => document.getElementById('past-event-form').requestSubmit()}>Create Event</button>
+            <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={() => document.getElementById('past-event-form').requestSubmit()}>Create Folder</button>
           </>
         }
       >
