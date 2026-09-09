@@ -42,7 +42,7 @@ function HostEventCard({ event, onEdit, onDelete }) {
         {onDelete && (
           <button 
             onClick={handleDelete}
-            style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+            style={{ position: 'absolute', top: '8px', right: '8px', background: 'transparent', color: '#fff', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
             aria-label="Delete event"
           >
             <span style={{ fontSize: '16px', lineHeight: 1 }}>&times;</span>

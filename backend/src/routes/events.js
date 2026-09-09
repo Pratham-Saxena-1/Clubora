@@ -16,9 +16,9 @@ const eventSchema = z.object({
   description: z.string().optional(),
   location: z.string().optional(),
   dateTime: z.string().datetime().or(z.date()),
-  capacity: z.number().optional(),
-  isPaid: z.boolean().optional(),
-  fee: z.number().optional(),
+  capacity: z.coerce.number().optional(),
+  isPaid: z.coerce.boolean().optional(),
+  fee: z.coerce.number().optional(),
 });
 
 const updateEventSchema = eventSchema.omit({ clubId: true }).partial();
@@ -53,8 +53,8 @@ router.get('/:id', getEvent);
 
 // Host Event Management
 router.get('/registrations/club', authenticate, authorize('Host'), getClubRegistrations);
-router.post('/', authenticate, authorize('Host'), authorizeOwner(isClubOwner), validate(eventSchema), createEvent);
-router.put('/:id', authenticate, authorizeOwner(isEventOwner), validate(updateEventSchema), updateEvent);
+router.post('/', authenticate, authorize('Host'), authorizeOwner(isClubOwner), upload.single('coverImage'), validate(eventSchema), createEvent);
+router.put('/:id', authenticate, authorizeOwner(isEventOwner), upload.single('coverImage'), validate(updateEventSchema), updateEvent);
 router.delete('/:id', authenticate, authorizeOwner(isEventOwner), deleteEvent);
 router.get('/:id/registrations', authenticate, authorizeOwner(isEventOwner), getEventRegistrations);
 router.post('/:id/gallery', authenticate, authorizeOwner(isEventOwner), upload.array('galleryImages', 10), uploadGalleryImage);

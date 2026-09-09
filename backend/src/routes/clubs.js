@@ -13,6 +13,7 @@ const clubSchema = z.object({
   description: z.string().optional(),
   categories: z.array(z.string()).optional(),
   contactNumber: z.string().optional(),
+  instagram: z.string().optional(),
   establishedYear: z.number().optional(),
 });
 

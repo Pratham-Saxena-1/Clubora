@@ -45,24 +45,24 @@ function HostDashboard() {
     }
 
     const formData = new FormData(e.target);
-    const payload = Object.fromEntries(formData);
-    payload.clubId = club._id;
-    payload.isPaid = payload.isPaid === 'true';
-    if (!payload.isPaid) {
-      payload.fee = 0;
-    } else {
-      payload.fee = Number(payload.fee);
+    formData.append('clubId', club._id);
+    
+    const isPaid = formData.get('isPaid') === 'true';
+    if (!isPaid) {
+      formData.set('fee', 0);
     }
-
-    // Basic datetime parsing for the input format
-    payload.dateTime = new Date(payload.date + ' ' + payload.time).toISOString() || new Date().toISOString();
+    
+    const dateVal = formData.get('date');
+    const timeVal = formData.get('time');
+    const dateTime = new Date(dateVal + ' ' + timeVal).toISOString() || new Date().toISOString();
+    formData.set('dateTime', dateTime);
     
     try {
       if (editingEvent) {
-        await api.put(`/events/${editingEvent._id}`, payload);
+        await api.put(`/events/${editingEvent._id}`, formData);
         addToast('Event updated successfully!', 'success');
       } else {
-        await api.post('/events', payload);
+        await api.post('/events', formData);
         addToast('Event created successfully!', 'success');
       }
       setIsModalOpen(false);
@@ -164,6 +164,7 @@ function HostDashboard() {
                 name="date"
                 type="date" 
                 className="host-modal__input" 
+                defaultValue={editingEvent?.dateTime ? new Date(new Date(editingEvent.dateTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0] : ''}
                 required 
               />
             </div>
@@ -173,6 +174,7 @@ function HostDashboard() {
                 name="time"
                 type="time" 
                 className="host-modal__input" 
+                defaultValue={editingEvent?.dateTime ? new Date(new Date(editingEvent.dateTime).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[1].slice(0, 5) : ''}
                 required 
               />
             </div>
@@ -256,6 +258,7 @@ function HostDashboard() {
               <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-tertiary)' }}>{bannerFileName}</span>
               <input 
                 type="file" 
+                name="coverImage"
                 ref={bannerInputRef}
                 style={{ display: 'none' }}
                 accept="image/jpeg, image/jpg"

@@ -28,7 +28,11 @@ exports.getEvent = async (req, res, next) => {
 
 exports.createEvent = async (req, res, next) => {
   try {
-    const event = await Event.create(req.body);
+    const payload = { ...req.body };
+    if (req.file) {
+      payload.coverImage = `/uploads/${req.file.filename}`;
+    }
+    const event = await Event.create(payload);
     res.status(201).json(event);
   } catch (error) {
     next(error);
@@ -37,9 +41,13 @@ exports.createEvent = async (req, res, next) => {
 
 exports.updateEvent = async (req, res, next) => {
   try {
+    const payload = { ...req.body };
+    if (req.file) {
+      payload.coverImage = `/uploads/${req.file.filename}`;
+    }
     const event = await Event.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      payload,
       { new: true, runValidators: true }
     );
     res.json(event);
