@@ -39,6 +39,7 @@ const clubSchema = new mongoose.Schema(
         photoUrl: { type: String },
         registrationNumber: { type: String },
         contactNumber: { type: String },
+        email: { type: String },
         level: { type: Number, default: 0 }
       }
     ],
@@ -47,6 +48,7 @@ const clubSchema = new mongoose.Schema(
         title: { type: String, required: true },
         date: { type: Date, required: true },
         description: { type: String },
+        thumbnailUrl: { type: String },
         images: [{ type: String }]
       }
     ]

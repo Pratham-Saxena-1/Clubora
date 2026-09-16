@@ -18,6 +18,7 @@ function HostApplicants() {
   const pageSize = 10;
 
   const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [resumeModal, setResumeModal] = useState(null);
   const [answersModal, setAnswersModal] = useState(null);
   const [interviewModal, setInterviewModal] = useState(null);
@@ -46,7 +47,8 @@ function HostApplicants() {
       
       return (
         (studentName.includes(search.toLowerCase()) || roleName.includes(search.toLowerCase())) &&
-        (roleFilter === '' || a.recruitmentId?.title === roleFilter)
+        (roleFilter === '' || a.recruitmentId?.title === roleFilter) &&
+        (statusFilter === '' || a.status === statusFilter)
       );
     }
   );
@@ -94,7 +96,7 @@ function HostApplicants() {
     addToast('Excel file downloaded', 'success');
   };
 
-  const columns = ['Applicant', 'Applied Role', 'Submission Date', 'Status', 'Actions'];
+  const columns = ['Applicant', 'Applied Role', 'Submission Date', 'Status', 'Actions', 'Hiring Status'];
 
   const renderRow = (applicant) => {
     const student = applicant.studentId || {};
@@ -102,7 +104,7 @@ function HostApplicants() {
     const subDate = new Date(applicant.createdAt).toLocaleDateString();
 
     return (
-      <tr key={applicant._id} className={applicant.status !== 'Pending' ? `host-applicants__status--${applicant.status.toLowerCase()}` : ''}>
+      <tr key={applicant._id} className={applicant.status !== 'Pending' ? `host-applicants__status--${applicant.status.toLowerCase().replace(/\s+/g, '-')}` : ''}>
         <td>
           <div className="host-data-table__participant">
             <div className="host-data-table__participant-avatar">{student.name ? student.name.substring(0, 2).toUpperCase() : 'ST'}</div>
@@ -123,25 +125,39 @@ function HostApplicants() {
         </td>
         <td className="host-applicants__date">{subDate}</td>
         <td>
-          {applicant.status !== 'Pending' ? (
-            <span className={`host-applicants__status-label host-applicants__status-label--${applicant.status.toLowerCase()}`}>
-              {applicant.status}
-            </span>
-          ) : (
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-xs)' }}>Pending</span>
-          )}
+          {(() => {
+            let displayStatus = applicant.status;
+            // Map advanced statuses back to 'Shortlisted' for the main Status column
+            if (['Hired', 'Not Hired', 'Interviewed'].includes(displayStatus)) {
+              displayStatus = 'Shortlisted';
+            }
+            if (displayStatus !== 'Pending') {
+              return (
+                <span className={`host-applicants__status-label host-applicants__status-label--${displayStatus.toLowerCase().replace(/\s+/g, '-')}`}>
+                  {displayStatus}
+                </span>
+              );
+            }
+            return <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-xs)' }}>Pending</span>;
+          })()}
         </td>
         <td>
           <div className="host-applicants__actions">
-            {applicant.resume && (
               <button 
                 className="host-data-table__action-btn" 
-                aria-label="View CV" 
-                onClick={() => setResumeModal(applicant)}
+                onClick={() => setInterviewModal(applicant)}
+                disabled={!!applicant.interview}
+                style={{ 
+                  padding: '6px 12px', 
+                  background: applicant.interview ? 'var(--bg-secondary)' : 'var(--primary-soft)', 
+                  color: applicant.interview ? 'var(--text-tertiary)' : 'var(--primary)', 
+                  border: 'none', 
+                  borderRadius: 'var(--radius-sm)',
+                  cursor: applicant.interview ? 'not-allowed' : 'pointer'
+                }}
               >
-                <Eye size={14} strokeWidth={2} />
+                {applicant.interview ? 'Interview Scheduled' : 'Schedule Interview'}
               </button>
-            )}
             
             {applicant.answers && applicant.answers.length > 0 && (
               <button 
@@ -153,45 +169,57 @@ function HostApplicants() {
               </button>
             )}
 
-            {applicant.status !== 'Accepted' && applicant.status !== 'Rejected' && (
+            {applicant.status !== 'Hired' && applicant.status !== 'Not Hired' && applicant.status !== 'Not Shortlisted' && applicant.status !== 'Accepted' && applicant.status !== 'Rejected' && (
               <>
                 {applicant.status === 'Pending' && (
-                  <button 
-                    className="host-data-table__action-btn host-data-table__action-btn--success" 
-                    aria-label="Shortlist"
-                    onClick={() => handleStatusChange(applicant._id, 'Shortlisted', student.name)}
-                  >
-                    Shortlist
-                  </button>
+                  <>
+                    <button 
+                      className="host-data-table__action-btn host-data-table__action-btn--success" 
+                      aria-label="Shortlist"
+                      onClick={() => handleStatusChange(applicant._id, 'Shortlisted', student.name)}
+                    >
+                      Shortlist
+                    </button>
+                    <button 
+                      className="host-data-table__action-btn host-data-table__action-btn--danger" 
+                      aria-label="Not Shortlisted"
+                      onClick={() => handleStatusChange(applicant._id, 'Not Shortlisted', student.name)}
+                    >
+                      <X size={14} strokeWidth={2} />
+                    </button>
+                  </>
                 )}
-                {applicant.status === 'Shortlisted' && (
-                  <button 
-                    className="host-data-table__action-btn host-data-table__action-btn--warning" 
-                    aria-label="Set Interview"
-                    onClick={() => setInterviewModal(applicant)}
-                  >
-                    <Calendar size={14} strokeWidth={2} />
-                  </button>
-                )}
-                {applicant.status === 'Interviewed' && (
-                  <button 
-                    className="host-data-table__action-btn host-data-table__action-btn--success" 
-                    aria-label="Accept"
-                    onClick={() => handleStatusChange(applicant._id, 'Accepted', student.name)}
-                  >
-                    <Check size={14} strokeWidth={2} />
-                  </button>
-                )}
-                <button 
-                  className="host-applicants__reject-btn" 
-                  aria-label="Reject"
-                  onClick={() => handleStatusChange(applicant._id, 'Rejected', student.name)}
-                >
-                  <X size={14} strokeWidth={2} />
-                </button>
+
+
               </>
             )}
           </div>
+        </td>
+        <td>
+          {applicant.status === 'Interviewed' ? (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                className="host-data-table__action-btn host-data-table__action-btn--success" 
+                aria-label="Hired"
+                onClick={() => handleStatusChange(applicant._id, 'Hired', student.name)}
+              >
+                Hired
+              </button>
+              <button 
+                className="host-data-table__action-btn host-data-table__action-btn--danger" 
+                aria-label="Not Hired"
+                onClick={() => handleStatusChange(applicant._id, 'Not Hired', student.name)}
+              >
+                Not Hired
+              </button>
+            </div>
+          ) : ['Hired', 'Not Hired'].includes(applicant.status) ? (
+            <span className={`host-applicants__status-label host-applicants__status-label--${applicant.status.toLowerCase().replace(/\s+/g, '-')}`}>
+              {applicant.status}
+            </span>
+          ) : (
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-xs)' }}>-</span>
+          )}
         </td>
       </tr>
     );
@@ -223,6 +251,19 @@ function HostApplicants() {
               <option key={role} value={role}>{role}</option>
             ))}
           </select>
+          <select 
+            value={statusFilter} 
+            onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }} 
+            className="host-tickets__filter"
+            style={{ minWidth: '150px' }}
+          >
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Shortlisted">Shortlisted</option>
+            <option value="Interviewed">Interviewed</option>
+            <option value="Hired">Hired</option>
+            <option value="Not Hired">Not Hired</option>
+          </select>
           <button onClick={exportToExcel} className="host-modal__btn host-modal__btn--secondary" style={{ padding: '8px 16px' }}>
             <Download size={16} /> Export Excel
           </button>
@@ -249,22 +290,7 @@ function HostApplicants() {
         </>
       )}
 
-      {/* View CV Modal */}
-      <HostModal
-        isOpen={!!resumeModal}
-        onClose={() => setResumeModal(null)}
-        title={`Resume: ${resumeModal?.studentId?.name}`}
-      >
-        {resumeModal && (
-          <div style={{ height: '600px', width: '100%' }}>
-            <iframe 
-              src={`http://localhost:5000${resumeModal.resume}`} 
-              style={{ width: '100%', height: '100%', border: 'none', borderRadius: 'var(--radius-md)' }} 
-              title="Resume Preview"
-            />
-          </div>
-        )}
-      </HostModal>
+
 
       {/* View Answers Modal */}
       <HostModal

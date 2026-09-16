@@ -52,3 +52,19 @@ exports.updateRecruitment = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.deleteRecruitment = async (req, res, next) => {
+  try {
+    const recruitment = await Recruitment.findByIdAndDelete(req.params.id);
+    if (!recruitment) {
+      return res.status(404).json({ error: { message: 'Recruitment not found', code: 'NOT_FOUND' } });
+    }
+    // Delete associated applications
+    const Application = require('../models/Application');
+    await Application.deleteMany({ recruitmentId: req.params.id });
+    
+    res.json({ message: 'Recruitment deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};

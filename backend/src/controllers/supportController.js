@@ -1,4 +1,6 @@
 const Ticket = require('../models/Ticket');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 exports.createTicket = async (req, res, next) => {
   try {
@@ -6,6 +8,18 @@ exports.createTicket = async (req, res, next) => {
       ...req.body,
       userId: req.user.id
     });
+
+    const hosts = await User.find({ role: 'Host' });
+    const notifications = hosts.map(host => ({
+      userId: host._id,
+      text: `New query received: ${ticket.subject}`,
+      type: 'system',
+      link: '/host/support'
+    }));
+    if (notifications.length > 0) {
+      await Notification.insertMany(notifications);
+    }
+
     res.status(201).json(ticket);
   } catch (error) {
     next(error);

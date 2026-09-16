@@ -18,6 +18,13 @@ function HostRecruitment() {
 
   useEffect(() => {
     fetchClubAndVacancies();
+    
+    // Set up polling to dynamically update stats in real-time
+    const intervalId = setInterval(() => {
+      fetchClubAndVacancies();
+    }, 5000); // 5 seconds
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   const fetchClubAndVacancies = async () => {
@@ -33,10 +40,10 @@ function HostRecruitment() {
         const apps = appsRes.data;
         setApplicantsCount(apps.length);
         
-        const interviews = apps.filter(a => a.status === 'Shortlisted' || a.status === 'Interviewed');
+        const interviews = apps.filter(a => a.interview != null || a.status === 'Interviewed');
         setInterviewsCount(interviews.length);
         
-        const hired = apps.filter(a => a.status === 'Accepted' && new Date(a.updatedAt).getMonth() === new Date().getMonth());
+        const hired = apps.filter(a => (a.status === 'Hired' || a.status === 'Accepted') && new Date(a.updatedAt).getMonth() === new Date().getMonth());
         setHiredCount(hired.length);
       }
     } catch (err) {
@@ -69,6 +76,17 @@ function HostRecruitment() {
       fetchClubAndVacancies();
     } catch (err) {
       addToast('Failed to publish vacancy', 'error');
+    }
+  };
+
+  const handleDeleteVacancy = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this vacancy?')) return;
+    try {
+      await api.delete(`/recruitments/${id}`);
+      addToast('Vacancy deleted successfully!', 'success');
+      fetchClubAndVacancies();
+    } catch (err) {
+      addToast('Failed to delete vacancy', 'error');
     }
   };
 
@@ -117,7 +135,16 @@ function HostRecruitment() {
         {vacancies.length > 0 ? (
           <div className="host-recruitment__vacancies-grid">
             {vacancies.map(vacancy => (
-              <div key={vacancy._id} className="host-recruitment__vacancy-card">
+              <div key={vacancy._id} className="host-recruitment__vacancy-card" style={{ position: 'relative' }}>
+                <button 
+                  onClick={() => handleDeleteVacancy(vacancy._id)}
+                  style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', color: '#fff', border: 'none', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.6, transition: 'opacity 0.2s' }}
+                  onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                  onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
+                  title="Delete Vacancy"
+                >
+                  <X size={16} strokeWidth={2.5} />
+                </button>
                 <h3 className="host-recruitment__vacancy-title">{vacancy.title}</h3>
                 <p className="host-recruitment__vacancy-desc">{vacancy.description}</p>
                 <div className="host-recruitment__vacancy-meta">

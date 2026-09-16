@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getRecruitments, getClubRecruitments, getRecruitment, createRecruitment, updateRecruitment } = require('../controllers/recruitmentController');
+const { getRecruitments, getClubRecruitments, getRecruitment, createRecruitment, updateRecruitment, deleteRecruitment } = require('../controllers/recruitmentController');
 const { authenticate, authorize, authorizeOwner } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const Club = require('../models/Club');
@@ -39,5 +39,6 @@ router.get('/club/:clubId', getClubRecruitments);
 router.get('/:id', getRecruitment);
 router.post('/', authenticate, authorize('Host'), authorizeOwner(isClubOwner), validate(recruitmentSchema), createRecruitment);
 router.put('/:id', authenticate, authorizeOwner(isRecruitmentOwner), validate(updateRecruitmentSchema), updateRecruitment);
+router.delete('/:id', authenticate, authorizeOwner(isRecruitmentOwner), deleteRecruitment);
 
 module.exports = router;

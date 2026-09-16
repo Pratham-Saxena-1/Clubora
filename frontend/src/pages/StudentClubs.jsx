@@ -65,7 +65,8 @@ function StudentClubs() {
       id: g._id,
       title: g.title,
       date: g.date,
-      images: g.images?.map(img => `http://localhost:5000${img}`) || []
+      thumbnailUrl: g.thumbnailUrl,
+      images: g.images || []
     }));
 
     // Detailed Profile View
@@ -116,18 +117,19 @@ function StudentClubs() {
                       style={{ position: 'relative', height: '140px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer' }}
                       onClick={() => setGalleryEvent(evt)}
                     >
-                      {evt.images && evt.images.length > 0 ? (
+                      {(evt.thumbnailUrl || (evt.images && evt.images.length > 0)) ? (
                         <>
-                          <img src={evt.images[0]} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={`http://localhost:5000${evt.thumbnailUrl || evt.images[0]}`} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'var(--space-sm)' }}>
                             <span style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: '#fff' }}>{evt.title}</span>
-                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{evt.images.length} Photos</span>
+                            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{evt.images ? evt.images.length : 0} Photos</span>
                           </div>
                         </>
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
                           <ImageIcon size={24} strokeWidth={1.5} style={{ marginBottom: '8px' }} />
                           <span style={{ fontSize: 'var(--font-xs)', fontWeight: 600 }}>{evt.title}</span>
+                          <span style={{ fontSize: '10px' }}>No photos</span>
                         </div>
                       )}
                     </div>
@@ -201,10 +203,10 @@ function StudentClubs() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                  {galleryEvent.images?.length > 0 ? (
+                  {(galleryEvent.images?.length > 0) ? (
                     <div className="arc-gallery" style={{ flex: 1, minHeight: '300px' }}>
-                      {galleryEvent.images?.map((img, idx) => {
-                        const total = galleryEvent.images.length;
+                      {(galleryEvent.images || []).filter(Boolean).map((img, idx, arr) => {
+                        const total = arr.length;
                         const middle = (total - 1) / 2;
                         const offset = idx - middle;
                         const rotation = offset * 15;
@@ -213,7 +215,7 @@ function StudentClubs() {
                         return (
                           <img 
                             key={idx} 
-                            src={img} 
+                            src={`http://localhost:5000${img}`} 
                             alt={`Event photo ${idx+1}`} 
                             className="arc-gallery__item"
                             style={{
@@ -221,7 +223,7 @@ function StudentClubs() {
                               '--transY': `${translationY}px`,
                               zIndex: total - Math.abs(offset)
                             }}
-                            onClick={() => setExpandedPhoto(img)}
+                            onClick={() => setExpandedPhoto(`http://localhost:5000${img}`)}
                           />
                         );
                       })}

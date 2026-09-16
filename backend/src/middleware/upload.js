@@ -10,7 +10,7 @@ const storage = multer.diskStorage({
     else if (file.fieldname === 'qrTicket') dest += 'event-qr/';
     else if (file.fieldname === 'certificateFile') dest += 'certificates/';
     else if (file.fieldname === 'teamMemberPhoto') dest += 'team-members/';
-    else if (file.fieldname === 'galleryImage') dest += 'gallery/';
+    else if (file.fieldname === 'galleryImage' || file.fieldname === 'galleryImages' || file.fieldname === 'thumbnailImage') dest += 'gallery/';
     cb(null, dest);
   },
   filename: function (req, file, cb) {

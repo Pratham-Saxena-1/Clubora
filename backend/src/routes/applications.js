@@ -11,7 +11,7 @@ const Club = require('../models/Club');
 const router = express.Router();
 
 const statusSchema = z.object({
-  status: z.enum(['Pending', 'Shortlisted', 'Interviewed', 'Accepted', 'Rejected'])
+  status: z.enum(['Pending', 'Shortlisted', 'Not Shortlisted', 'Interviewed', 'Hired', 'Not Hired', 'Accepted', 'Rejected'])
 });
 
 const interviewSchema = z.object({

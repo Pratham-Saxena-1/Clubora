@@ -447,8 +447,13 @@ img { max-width: 100%; display: block; }
 .host-applicants__status--accepted td { color: var(--success); }
 .host-applicants__status--rejected { opacity: 0.5; text-decoration: line-through; }
 .host-applicants__status-label { display: inline-block; padding: 4px 10px; border-radius: var(--radius-full); font-size: var(--font-xs); font-weight: 600; }
-.host-applicants__status-label--accepted { background: var(--success-soft); color: var(--success); }
-.host-applicants__status-label--rejected { background: var(--danger-soft); color: var(--danger); }
+.host-applicants__status-label--accepted,
+.host-applicants__status-label--hired { background: var(--success-soft); color: var(--success); }
+.host-applicants__status-label--rejected,
+.host-applicants__status-label--not-hired,
+.host-applicants__status-label--not-shortlisted { background: var(--danger-soft); color: var(--danger); }
+.host-applicants__status-label--shortlisted { background: var(--warning-soft); color: var(--warning); }
+.host-applicants__status-label--interviewed { background: var(--primary-soft); color: var(--primary); }
 
 /* --- HostRegistrations --- */
 .host-registrations__event-name { font-weight: 500; }

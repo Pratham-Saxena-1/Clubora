@@ -21,6 +21,8 @@ function HostClubProfile() {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoError, setPhotoError] = useState('');
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [eventThumbnailPreview, setEventThumbnailPreview] = useState(null);
+  const [eventPhotos, setEventPhotos] = useState([]);
   
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -39,7 +41,8 @@ function HostClubProfile() {
         id: g._id,
         title: g.title,
         date: g.date,
-        images: g.images?.map(img => `http://localhost:5000${img}`) || []
+        thumbnailUrl: g.thumbnailUrl,
+        images: g.images || []
       })));
       
     } catch (err) {
@@ -86,6 +89,19 @@ function HostClubProfile() {
     }
   };
 
+  const handleRemoveMember = async (memberId, e) => {
+    e?.stopPropagation();
+    if (!window.confirm('Are you sure you want to remove this member?')) return;
+    try {
+      const { data } = await api.delete(`/clubs/${clubInfo._id}/team-members/${memberId}`);
+      setClubInfo(data);
+      if (memberDetails && memberDetails._id === memberId) setMemberDetails(null);
+      addToast('Team member removed', 'success');
+    } catch (err) {
+      addToast('Failed to remove member', 'error');
+    }
+  };
+
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -102,6 +118,28 @@ function HostClubProfile() {
     }
   };
 
+  const handleEventThumbnailChange = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      setEventThumbnailPreview(URL.createObjectURL(file));
+    } else {
+      setEventThumbnailPreview(null);
+    }
+  };
+
+  const handleEventPhotosChange = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(f => f.type.startsWith('image/'));
+    if (validFiles.length > 0) {
+      setEventPhotos(prev => [...prev, ...validFiles]);
+    }
+    e.target.value = null;
+  };
+  
+  const removeEventPhoto = (index) => {
+    setEventPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   const openGallery = (evt) => {
     setGalleryEvent(evt);
     setExpandedPhoto(null);
@@ -112,21 +150,33 @@ function HostClubProfile() {
   const handleCreatePastEvent = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const fileInput = e.target.galleryImages;
-    const files = fileInput ? fileInput.files : [];
     
-    // We append the title, date, description, and images to a single FormData
-    // Since formData already has title, date, description, we just ensure it's a FormData object
-    // Wait, the form action has files in it already if it's multipart/form-data.
+    formData.delete('galleryImages');
+    eventPhotos.forEach(file => {
+      formData.append('galleryImages', file);
+    });
     
     try {
       await api.post(`/clubs/${clubInfo._id}/galleries`, formData);
       
       addToast('Gallery created successfully!', 'success');
       setIsPastEventModalOpen(false);
+      setEventPhotos([]);
+      setEventThumbnailPreview(null);
       fetchClub(); // Refresh list
     } catch (err) {
       addToast('Failed to create gallery', 'error');
+    }
+  };
+
+  const handleRemoveGallery = async (evtId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this past event showcase?')) return;
+    try {
+      await api.delete(`/clubs/${clubInfo._id}/galleries/${evtId}`);
+      addToast('Past event deleted successfully!', 'success');
+      fetchClub(); // Refresh list
+    } catch (err) {
+      addToast('Failed to delete past event', 'error');
     }
   };
 
@@ -203,8 +253,8 @@ function HostClubProfile() {
             <div className="host-club-profile__hierarchy">
               <div className="hierarchy-levels" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <div style={{ display: 'flex', gap: '16px' }}>
-                  <div className="hierarchy-tree__content hierarchy-tree__content--root" onClick={() => setMemberDetails({ name: clubInfo.hostId?.name || 'You', role: 'President' })}>
-                    {clubInfo.hostId?.name || 'You (President)'}
+                  <div className="hierarchy-tree__content" onClick={() => setMemberDetails({ _id: clubInfo.hostId?._id, name: clubInfo.hostId?.name || 'You', role: 'President', isHost: true })}>
+                    {clubInfo.hostId?.name || 'You'} <br/> <span style={{fontSize: '10px', color: 'var(--text-secondary)'}}>President</span>
                   </div>
                 </div>
                 {getMembersByLevel().map((levelMembers, idx) => (
@@ -212,7 +262,14 @@ function HostClubProfile() {
                     <div style={{ width: '2px', height: '32px', background: 'var(--border)' }}></div>
                     <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
                       {levelMembers.map(member => (
-                        <div key={member._id} className="hierarchy-tree__content" onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
+                        <div key={member._id} className="hierarchy-tree__content" style={{ position: 'relative' }} onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
+                          <div 
+                             style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#000', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid var(--border)', zIndex: 10 }}
+                             onClick={(e) => handleRemoveMember(member._id, e)}
+                             title="Remove Member"
+                          >
+                             <X size={12} strokeWidth={3} />
+                          </div>
                           {member.name} <br/> <span style={{fontSize: '10px', color: 'var(--text-secondary)'}}>{member.role}</span>
                         </div>
                       ))}
@@ -254,9 +311,9 @@ function HostClubProfile() {
                     onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--primary)'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
                   >
-                    {evt.images && evt.images.length > 0 ? (
+                    {(evt.thumbnailUrl || (evt.images && evt.images.length > 0)) ? (
                       <>
-                        <img src={evt.images[0]} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={`http://localhost:5000${evt.thumbnailUrl || evt.images[0]}`} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'var(--space-sm)' }}>
                           <span style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>{evt.title}</span>
                           <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{evt.images.length} Photos</span>
@@ -269,6 +326,35 @@ function HostClubProfile() {
                         <span style={{ fontSize: '10px' }}>No photos</span>
                       </div>
                     )}
+                    
+                    {/* Delete button (X) */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent opening gallery modal
+                        handleRemoveGallery(evt._id || evt.id);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0,0,0,0.5)',
+                        border: 'none',
+                        color: 'var(--danger)',
+                        borderRadius: '50%',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.8)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.5)'}
+                      aria-label="Remove Event"
+                    >
+                      <X size={14} strokeWidth={3} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -350,6 +436,10 @@ function HostClubProfile() {
               <input type="text" name="registrationNumber" className="host-modal__input" placeholder="e.g. 21BCE0001" required />
             </div>
             <div className="host-modal__field" style={{ marginBottom: '0' }}>
+              <label className="host-modal__label">Email Address</label>
+              <input type="email" name="email" className="host-modal__input" placeholder="e.g. member@clubora.com" required />
+            </div>
+            <div className="host-modal__field" style={{ marginBottom: '0' }}>
               <label className="host-modal__label">Contact No.</label>
               <input type="text" name="contactNumber" className="host-modal__input" placeholder="e.g. 9876543210" required />
             </div>
@@ -400,10 +490,10 @@ function HostClubProfile() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Upload form removed */}
-                {galleryEvent.images?.length > 0 ? (
+                {(galleryEvent.images?.length > 0) ? (
                   <div className="arc-gallery" style={{ flex: 1, minHeight: '300px' }}>
-                    {galleryEvent.images?.map((img, idx) => {
-                      const total = galleryEvent.images.length;
+                    {(galleryEvent.images || []).filter(Boolean).map((img, idx, arr) => {
+                      const total = arr.length;
                       const middle = (total - 1) / 2;
                       const offset = idx - middle;
                       const rotation = offset * 15;
@@ -412,7 +502,7 @@ function HostClubProfile() {
                       return (
                         <img 
                           key={idx} 
-                          src={img} 
+                          src={`http://localhost:5000${img}`} 
                           alt={`Event photo ${idx+1}`} 
                           className="arc-gallery__item"
                           style={{
@@ -420,7 +510,7 @@ function HostClubProfile() {
                             '--transY': `${translationY}px`,
                             zIndex: total - Math.abs(offset)
                           }}
-                          onClick={() => setExpandedPhoto(img)}
+                          onClick={() => setExpandedPhoto(`http://localhost:5000${img}`)}
                         />
                       );
                     })}
@@ -439,11 +529,19 @@ function HostClubProfile() {
       {/* Create Past Event Modal */}
       <HostModal
         isOpen={isPastEventModalOpen}
-        onClose={() => setIsPastEventModalOpen(false)}
+        onClose={() => {
+          setIsPastEventModalOpen(false);
+          setEventPhotos([]);
+          setEventThumbnailPreview(null);
+        }}
         title="Add Past Event"
         footer={
           <>
-            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setIsPastEventModalOpen(false)}>Cancel</button>
+            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => {
+              setIsPastEventModalOpen(false);
+              setEventPhotos([]);
+              setEventThumbnailPreview(null);
+            }}>Cancel</button>
             <button type="button" className="host-modal__btn host-modal__btn--primary" onClick={() => document.getElementById('past-event-form').requestSubmit()}>Create Folder</button>
           </>
         }
@@ -462,8 +560,33 @@ function HostClubProfile() {
             <textarea name="description" className="host-modal__textarea" placeholder="Describe the event..." rows={3} required />
           </div>
           <div className="host-modal__field" style={{ marginBottom: 0 }}>
-            <label className="host-modal__label">Event Photos (Optional)</label>
-            <input type="file" name="galleryImages" className="host-modal__input" multiple accept="image/jpeg, image/jpg, image/png" style={{ padding: '8px' }} />
+            <label className="host-modal__label">Event Thumbnail</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+              {eventThumbnailPreview && (
+                <div style={{ width: '48px', height: '48px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                  <img src={eventThumbnailPreview} alt="Thumbnail Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+              <div style={{ flex: 1 }}>
+                <input type="file" name="thumbnailImage" className="host-modal__input" accept="image/jpeg, image/jpg, image/png" required style={{ padding: '8px' }} onChange={handleEventThumbnailChange} />
+              </div>
+            </div>
+          </div>
+          <div className="host-modal__field" style={{ marginBottom: 0 }}>
+            <label className="host-modal__label">Event Photos</label>
+            <input type="file" name="galleryImages" className="host-modal__input" multiple accept="image/jpeg, image/jpg, image/png" style={{ padding: '8px' }} onChange={handleEventPhotosChange} required={eventPhotos.length === 0} />
+            {eventPhotos.length > 0 && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                {eventPhotos.map((file, idx) => (
+                  <div key={idx} style={{ position: 'relative', width: '48px', height: '48px', borderRadius: '4px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <img src={URL.createObjectURL(file)} alt="Event Photo Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button type="button" onClick={() => removeEventPhoto(idx)} style={{ position: 'absolute', top: 0, right: 0, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', borderRadius: '0 0 0 4px', cursor: 'pointer', padding: '2px' }}>
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <input type="hidden" name="location" value="Past Event" />
         </form>
@@ -476,7 +599,7 @@ function HostClubProfile() {
         title="Member Details"
       >
         {memberDetails && (
-          <div className="host-club-profile__member-detail-modal">
+          <div className="host-club-profile__member-detail-modal" style={{ position: 'relative' }}>
              <div className="host-club-profile__member-avatar" style={{ width: '100px', height: '100px', margin: '0 auto var(--space-md)' }}>
                {memberDetails.photo ? (
                  <img src={memberDetails.photo} alt={memberDetails.name} className="host-club-profile__member-photo" />
@@ -488,6 +611,17 @@ function HostClubProfile() {
              </div>
              <h3 className="host-club-profile__member-name" style={{ textAlign: 'center', fontSize: 'var(--font-lg)' }}>{memberDetails.name}</h3>
              <span className="host-club-profile__role-tag" style={{ display: 'block', width: 'fit-content', margin: '0 auto var(--space-lg)' }}>{memberDetails.role}</span>
+             
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--bg-tertiary)', padding: '16px', borderRadius: '12px', marginTop: '16px', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                   <Mail size={16} />
+                   <span>{memberDetails.email ? memberDetails.email : (memberDetails.isHost ? (clubInfo.hostId?.name ? `${clubInfo.hostId.name.split(' ')[0].toLowerCase()}@clubora.com` : 'you@clubora.com') : `${memberDetails.name.split(' ')[0].toLowerCase()}.${memberDetails.name.split(' ')[1] ? memberDetails.name.split(' ')[1].charAt(0).toLowerCase() : ''}@eventx.edu`)}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)', fontSize: '14px' }}>
+                   <Phone size={16} />
+                   <span>{memberDetails.contactNumber || 'No contact number provided'}</span>
+                </div>
+             </div>
           </div>
         )}
       </HostModal>

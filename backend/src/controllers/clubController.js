@@ -79,28 +79,43 @@ exports.updateClub = async (req, res, next) => {
   }
 };
 
-exports.addTeamMember = async (req, res, next) => {
-  try {
-    const { name, role, registrationNumber, contactNumber, level } = req.body;
-    let photoUrl = undefined;
-    if (req.file) {
-      photoUrl = `/uploads/team-members/${req.file.filename}`;
-    }
+  exports.addTeamMember = async (req, res, next) => {
+    try {
+      const { name, role, registrationNumber, contactNumber, email, level } = req.body;
+      let photoUrl = undefined;
+      if (req.file) {
+        photoUrl = `/uploads/team-members/${req.file.filename}`;
+      }
+  
+      const club = await Club.findById(req.params.id);
+      if (!club) return res.status(404).json({ error: { message: 'Club not found' } });
+      if (club.hostId.toString() !== req.user.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+  
+      club.teamMembers.push({ 
+        name, 
+        role, 
+        registrationNumber, 
+        contactNumber, 
+        email,
+        level: level ? parseInt(level) : 1,
+        photoUrl 
+      });
+      await club.save();
+    res.status(201).json(club);
+  } catch (error) {
+    next(error);
+  }
+};
 
+exports.removeTeamMember = async (req, res, next) => {
+  try {
     const club = await Club.findById(req.params.id);
     if (!club) return res.status(404).json({ error: { message: 'Club not found' } });
     if (club.hostId.toString() !== req.user.id) return res.status(403).json({ error: { message: 'Forbidden' } });
 
-    club.teamMembers.push({ 
-      name, 
-      role, 
-      registrationNumber, 
-      contactNumber, 
-      level: level ? parseInt(level) : 1,
-      photoUrl 
-    });
+    club.teamMembers = club.teamMembers.filter(member => member._id.toString() !== req.params.memberId);
     await club.save();
-    res.status(201).json(club);
+    res.status(200).json(club);
   } catch (error) {
     next(error);
   }
@@ -169,19 +184,42 @@ exports.createGallery = async (req, res, next) => {
     if (club.hostId.toString() !== req.user.id) return res.status(403).json({ error: { message: 'Forbidden' } });
 
     let images = [];
-    if (req.files && req.files.length > 0) {
-      images = req.files.map(file => `/uploads/gallery/${file.filename}`);
+    let thumbnailUrl = undefined;
+
+    if (req.files) {
+      if (req.files.galleryImages && req.files.galleryImages.length > 0) {
+        images = req.files.galleryImages.map(file => `/uploads/gallery/${file.filename}`);
+      }
+      if (req.files.thumbnailImage && req.files.thumbnailImage.length > 0) {
+        thumbnailUrl = `/uploads/gallery/${req.files.thumbnailImage[0].filename}`;
+      }
     }
 
     club.galleries.push({
       title,
       date: new Date(date),
       description,
+      thumbnailUrl,
       images
     });
 
     await club.save();
     res.status(201).json(club);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.removeGallery = async (req, res, next) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    if (!club) return res.status(404).json({ error: { message: 'Club not found' } });
+    if (club.hostId.toString() !== req.user.id) return res.status(403).json({ error: { message: 'Forbidden' } });
+
+    club.galleries.pull(req.params.galleryId);
+    await club.save();
+    
+    res.json({ message: 'Gallery removed successfully', club });
   } catch (error) {
     next(error);
   }

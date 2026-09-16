@@ -16,6 +16,7 @@ function HostSettings() {
     regNumber: '',
     contactNumber: '',
     gender: 'Male',
+    profilePic: '',
   });
   
   const [photoName, setPhotoName] = useState('Recommended: 200x200px JPG or PNG');
@@ -35,6 +36,7 @@ function HostSettings() {
           instagramUrl: data.settings?.instagramUrl || '',
           regNumber: data.settings?.regNumber || '',
           gender: data.settings?.gender || 'Male',
+          profilePic: data.profilePic || '',
         }));
       } catch (err) {
         addToast('Failed to load profile data', 'error');
@@ -56,9 +58,10 @@ function HostSettings() {
       formData.append('profilePic', file);
       
       try {
-        await api.post(`/users/${user.id}/profile-pic`, formData, {
+        const res = await api.post(`/users/${user.id}/profile-pic`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
+        setFormData(prev => ({ ...prev, profilePic: res.data.profilePic }));
         addToast('Photo updated successfully!', 'success');
       } catch (err) {
         addToast('Failed to update photo', 'error');
@@ -111,7 +114,11 @@ function HostSettings() {
           
           <div className="host-settings__photo-section">
             <div className="host-settings__photo-preview">
-              <span className="host-settings__photo-initials">{formData.name ? formData.name.substring(0, 2).toUpperCase() : 'HO'}</span>
+              {formData.profilePic ? (
+                <img src={`http://localhost:5000${formData.profilePic}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                <span className="host-settings__photo-initials">{formData.name ? formData.name.substring(0, 2).toUpperCase() : 'HO'}</span>
+              )}
             </div>
             <div className="host-settings__photo-info">
               <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />

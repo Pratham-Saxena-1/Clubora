@@ -208,7 +208,13 @@ function HostTopBar() {
               </div>
               <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
                 {notifications.map(n => (
-                  <div key={n._id} onClick={() => !n.read && markAsRead(n._id)} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--bg-tertiary)', cursor: n.read ? 'default' : 'pointer' }}>
+                  <div key={n._id} onClick={() => {
+                    if (!n.read) markAsRead(n._id);
+                    if (n.link) {
+                      navigate(n.link);
+                      setShowNotifs(false);
+                    }
+                  }} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: n.read ? 'transparent' : 'var(--bg-tertiary)', cursor: 'pointer' }}>
                     <div style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)', marginBottom: '4px' }}>{n.text}</div>
                     <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-tertiary)' }}>{new Date(n.createdAt).toLocaleString()}</div>
                   </div>
