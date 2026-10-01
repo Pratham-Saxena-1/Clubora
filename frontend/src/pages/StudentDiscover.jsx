@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, MapPin, X, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import DynamicFormFiller from '../components/DynamicFormFiller';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
@@ -68,10 +69,20 @@ function StudentDiscover() {
     try {
       const formData = new FormData();
       if (selectedEvent.isPaid && e.target.paymentScreenshot) {
-        formData.append('paymentScreenshot', e.target.paymentScreenshot.files[0]);
+        formData.append('file', e.target.paymentScreenshot.files[0]); // We use 'file' in upload.single('file') in form routes
       }
       
-      await api.post(`/events/${selectedEvent._id}/register`, formData);
+      const formattedAnswers = [];
+      Object.keys(answers).forEach(key => {
+        formattedAnswers.push({ fieldId: key, value: answers[key] });
+      });
+      
+      formData.append('contextType', 'Event');
+      formData.append('contextId', selectedEvent._id);
+      formData.append('formId', selectedEvent.formId?._id || selectedEvent.formId);
+      formData.append('answers', JSON.stringify(formattedAnswers));
+      
+      await api.post(`/forms/${selectedEvent.formId?._id || selectedEvent.formId}/submit`, formData);
       
       setRegisteredEvents(prev => ({ ...prev, [selectedEvent._id]: true }));
       addToast('Successfully registered for the event!', 'success');
@@ -243,7 +254,7 @@ function StudentDiscover() {
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Please fill out the following details requested by the organizer.</p>
                   </div>
                   
-                  {selectedEvent.isPaid ? (
+                  {selectedEvent.isPaid && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
                       <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                         <h4 style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-primary)' }}>Payment Required: ${selectedEvent.fee}</h4>
@@ -260,11 +271,14 @@ function StudentDiscover() {
                         </div>
                       </div>
                     </div>
-                  ) : (
-                    <div style={{ padding: '24px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', textAlign: 'center', marginBottom: '24px' }}>
-                      <p style={{ color: 'var(--text-secondary)' }}>This is a free event. You're ready to register!</p>
-                    </div>
                   )}
+                    {selectedEvent.formId ? (
+                      <DynamicFormFiller form={selectedEvent.formId} answers={answers} setAnswers={setAnswers} />
+                    ) : (
+                      <div className="host-modal__field" style={{ marginBottom: '24px' }}>
+                        <p style={{ color: 'var(--text-secondary)' }}>No dynamic form attached to this event. You can proceed to register.</p>
+                      </div>
+                    )}
                   
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <button type="button" className="host-modal__btn host-modal__btn--secondary" style={{ flex: 1 }} onClick={() => setIsRegistering(false)}>Back</button>

@@ -12,6 +12,10 @@ const eventRegistrationSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    formResponseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'FormResponse',
+    },
     paymentVerified: {
       type: Boolean,
       default: false,

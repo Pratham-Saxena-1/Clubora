@@ -17,15 +17,10 @@ const applicationSchema = new mongoose.Schema(
       enum: ['Pending', 'Shortlisted', 'Not Shortlisted', 'Interviewed', 'Hired', 'Not Hired', 'Accepted', 'Rejected'],
       default: 'Pending',
     },
-    position: {
-      type: String,
+    formResponseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'FormResponse',
     },
-    answers: [
-      {
-        question: String,
-        answer: String,
-      },
-    ],
     interview: {
       date: Date,
       time: String,

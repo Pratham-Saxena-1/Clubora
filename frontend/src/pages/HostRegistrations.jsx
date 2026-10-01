@@ -57,13 +57,25 @@ function HostRegistrations() {
   const paged = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const exportToExcel = () => {
-    const exportData = registrations.map(r => ({
-      'Participant Name': r.studentId?.name || 'Unknown',
-      'Email': r.studentId?.email || 'N/A',
-      'Event Name': r.eventId?.title || 'Unknown',
-      'Registration Date': new Date(r.createdAt).toLocaleDateString(),
-      'Payment Verified': r.paymentVerified ? 'Yes' : 'No'
-    }));
+    const exportData = registrations.map(r => {
+      const baseData = {
+        'Participant Name': r.studentId?.name || 'Unknown',
+        'Email': r.studentId?.email || 'N/A',
+        'Event Name': r.eventId?.title || 'Unknown',
+        'Registration Date': new Date(r.createdAt).toLocaleDateString(),
+        'Payment Verified': r.paymentVerified ? 'Yes' : 'No'
+      };
+      
+      if (r.formResponseId?.answers && r.formResponseId.answers.length > 0) {
+        r.formResponseId.answers.forEach(ans => {
+          const fieldDef = r.formResponseId.formId?.fields?.find(f => f.id === ans.fieldId);
+          const label = fieldDef ? fieldDef.label : ans.fieldId;
+          baseData[label] = Array.isArray(ans.value) ? ans.value.join(', ') : (typeof ans.value === 'object' ? JSON.stringify(ans.value) : String(ans.value));
+        });
+      }
+      
+      return baseData;
+    });
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
@@ -82,7 +94,7 @@ function HostRegistrations() {
     }
   };
 
-  const columns = ['Participant', 'Event Name', 'Registration Date', 'Status'];
+  const columns = ['Participant', 'Event Name', 'Registration Date', 'Payment Status', 'Actions'];
 
   const renderRow = (reg) => {
     const student = reg.studentId || {};
@@ -107,15 +119,22 @@ function HostRegistrations() {
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--success)', fontSize: '13px', fontWeight: 600 }}>
               <CheckCircle size={16} /> Verified
             </span>
+          ) : reg.eventId?.isPaid ? (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--warning)', fontSize: '13px', fontWeight: 600 }}>
+              <Clock size={16} /> Pending
+            </span>
           ) : (
-            <button 
-              className="host-modal__btn host-modal__btn--primary" 
-              style={{ padding: '6px 12px', fontSize: '12px' }}
-              onClick={() => setModalData(reg)}
-            >
-              Verify Payment
-            </button>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>N/A (Free)</span>
           )}
+        </td>
+        <td>
+          <button 
+            className="host-data-table__action-btn" 
+            aria-label="View Details" 
+            onClick={() => setModalData(reg)}
+          >
+            <FileText size={14} strokeWidth={2} />
+          </button>
         </td>
         </tr>
     );
@@ -178,25 +197,45 @@ function HostRegistrations() {
         </>
       )}
 
-      {/* Verify Payment Modal */}
+      {/* Registration Details Modal */}
       <HostModal
         isOpen={!!modalData}
         onClose={() => setModalData(null)}
-        title={`Verify Payment`}
+        title={`Registration Details: ${modalData?.studentId?.name}`}
         footer={
           <>
-            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setModalData(null)}>Cancel</button>
-            <button type="button" className="host-modal__btn host-modal__btn--primary" style={{ background: 'var(--success)', color: 'var(--bg-primary)' }} onClick={() => handleVerifyPayment(modalData._id)}>Confirm Payment</button>
+            <button type="button" className="host-modal__btn host-modal__btn--secondary" onClick={() => setModalData(null)}>Close</button>
+            {modalData?.eventId?.isPaid && !modalData?.paymentVerified && (
+              <button type="button" className="host-modal__btn host-modal__btn--primary" style={{ background: 'var(--success)', color: 'var(--bg-primary)' }} onClick={() => handleVerifyPayment(modalData._id)}>Confirm Payment</button>
+            )}
           </>
         }
       >
         {modalData && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-              You are about to verify payment for <strong>{modalData.studentId?.name}</strong> for the event <strong>{modalData.eventId?.title}</strong>.
-            </p>
+            {modalData.formResponseId?.answers && modalData.formResponseId.answers.length > 0 ? (
+              <div style={{ marginTop: '16px' }}>
+                <h4 style={{ marginBottom: '12px', fontSize: '14px', color: 'var(--text-primary)' }}>Registration Form Responses</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {modalData.formResponseId.answers.map((ans, idx) => {
+                    const fieldDef = modalData.formResponseId.formId?.fields?.find(f => f.id === ans.fieldId);
+                    return (
+                      <div key={idx} style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                        <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>{fieldDef ? fieldDef.label : `Field ID: ${ans.fieldId}`}</span>
+                        <span style={{ display: 'block', fontSize: '14px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '4px' }}>
+                          {Array.isArray(ans.value) ? ans.value.join(', ') : (typeof ans.value === 'object' ? JSON.stringify(ans.value) : String(ans.value))}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '16px', color: 'var(--text-secondary)' }}>No dynamic form responses found.</div>
+            )}
+
             {modalData.eventId?.isPaid && modalData.eventId?.fee > 0 && (
-              <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                 <h4 style={{ marginBottom: '12px', fontSize: '14px', color: 'var(--text-primary)' }}>Payment Verification Details</h4>
                 <div style={{ marginBottom: '8px' }}>
                   <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>Event Fee</span>

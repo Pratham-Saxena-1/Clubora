@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 function HostSettings() {
-  const { user, login, logout } = useAuth(); // Need to update context on save if possible, or just rely on re-fetch
+  const { user, login, logout, updateUser } = useAuth(); // Need to update context on save if possible, or just rely on re-fetch
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -62,6 +62,7 @@ function HostSettings() {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         setFormData(prev => ({ ...prev, profilePic: res.data.profilePic }));
+        if (updateUser) updateUser({ profilePic: res.data.profilePic });
         addToast('Photo updated successfully!', 'success');
       } catch (err) {
         addToast('Failed to update photo', 'error');
@@ -83,6 +84,7 @@ function HostSettings() {
         }
         // Password update would go to a separate endpoint or require old password typically, keeping simple
       });
+      if (updateUser) updateUser({ name: formData.name });
       addToast('Profile settings saved successfully!', 'success');
     } catch (err) {
       addToast('Failed to save settings', 'error');

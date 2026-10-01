@@ -224,3 +224,41 @@ exports.removeGallery = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.addGalleryImages = async (req, res, next) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    if (!club) return res.status(404).json({ error: { message: 'Club not found' } });
+    
+    const gallery = club.galleries.id(req.params.galleryId);
+    if (!gallery) return res.status(404).json({ error: { message: 'Gallery not found' } });
+
+    if (req.files && req.files.length > 0) {
+      const newImages = req.files.map(file => `/uploads/gallery/${file.filename}`);
+      gallery.images.push(...newImages);
+      await club.save();
+    }
+    
+    res.status(200).json(club);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.removeGalleryImage = async (req, res, next) => {
+  try {
+    const club = await Club.findById(req.params.id);
+    if (!club) return res.status(404).json({ error: { message: 'Club not found' } });
+    
+    const gallery = club.galleries.id(req.params.galleryId);
+    if (!gallery) return res.status(404).json({ error: { message: 'Gallery not found' } });
+
+    const { imageUrl } = req.body;
+    gallery.images = gallery.images.filter(img => img !== imageUrl);
+    
+    await club.save();
+    res.status(200).json(club);
+  } catch (error) {
+    next(error);
+  }
+};

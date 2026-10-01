@@ -81,14 +81,26 @@ function HostApplicants() {
   };
   
   const exportToExcel = () => {
-    const exportData = applicants.map(a => ({
-      Name: a.studentId?.name || 'Unknown',
-      'Contact Number': a.studentId?.contactNumber || 'N/A',
-      Email: a.studentId?.email || 'N/A',
-      Role: a.recruitmentId?.title || 'Unknown',
-      'Submission Date': new Date(a.createdAt).toLocaleDateString(),
-      Status: a.status
-    }));
+    const exportData = applicants.map(a => {
+      const baseData = {
+        'Name': a.studentId?.name || 'Unknown',
+        'Contact Number': a.studentId?.contactNumber || 'N/A',
+        'Email': a.studentId?.email || 'N/A',
+        'Role': a.recruitmentId?.title || 'Unknown',
+        'Submission Date': new Date(a.createdAt).toLocaleDateString(),
+        'Status': a.status
+      };
+      
+      if (a.formResponseId?.answers && a.formResponseId.answers.length > 0) {
+        a.formResponseId.answers.forEach(ans => {
+          const fieldDef = a.formResponseId.formId?.fields?.find(f => f.id === ans.fieldId);
+          const label = fieldDef ? fieldDef.label : ans.fieldId;
+          baseData[label] = Array.isArray(ans.value) ? ans.value.join(', ') : (typeof ans.value === 'object' ? JSON.stringify(ans.value) : String(ans.value));
+        });
+      }
+      
+      return baseData;
+    });
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Applicants");
@@ -159,10 +171,10 @@ function HostApplicants() {
                 {applicant.interview ? 'Interview Scheduled' : 'Schedule Interview'}
               </button>
             
-            {applicant.answers && applicant.answers.length > 0 && (
+            {(applicant.formResponseId?.answers && applicant.formResponseId.answers.length > 0) && (
               <button 
                 className="host-data-table__action-btn" 
-                aria-label="View Answers" 
+                aria-label="View Application" 
                 onClick={() => setAnswersModal(applicant)}
               >
                 <FileText size={14} strokeWidth={2} />
@@ -292,21 +304,37 @@ function HostApplicants() {
 
 
 
-      {/* View Answers Modal */}
       <HostModal
         isOpen={!!answersModal}
         onClose={() => setAnswersModal(null)}
-        title={`Application Answers: ${answersModal?.studentId?.name}`}
+        title={`Application Details: ${answersModal?.studentId?.name}`}
       >
-        {answersModal && answersModal.answers && (
+        {answersModal && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {answersModal.answers.map((ans, idx) => (
-              <div key={idx} style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Question {idx + 1}</span>
-                <span style={{ display: 'block', fontSize: '14px', color: 'var(--text-primary)', marginBottom: '8px', fontWeight: 600 }}>{ans.question}</span>
-                <span style={{ display: 'block', fontSize: '14px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '4px' }}>{ans.answer}</span>
+            {answersModal.formResponseId?.answers && answersModal.formResponseId.answers.length > 0 ? (
+              answersModal.formResponseId.answers.map((ans, idx) => {
+                const fieldDef = answersModal.formResponseId.formId?.fields?.find(f => f.id === ans.fieldId);
+                return (
+                  <div key={idx} style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>{fieldDef ? fieldDef.label : `Field ID: ${ans.fieldId}`}</span>
+                    <span style={{ display: 'block', fontSize: '14px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '4px' }}>
+                      {Array.isArray(ans.value) ? ans.value.join(', ') : (typeof ans.value === 'object' ? JSON.stringify(ans.value) : String(ans.value))}
+                    </span>
+                  </div>
+                );
+              })
+            ) : (
+              <p style={{ color: 'var(--text-secondary)' }}>No dynamic form responses found.</p>
+            )}
+            
+            {answersModal.resume && (
+              <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Resume</span>
+                <a href={`http://localhost:5000${answersModal.resume}`} target="_blank" rel="noopener noreferrer" className="host-modal__btn host-modal__btn--primary" style={{ display: 'inline-flex', padding: '8px 16px', textDecoration: 'none' }}>
+                  View Resume (PDF)
+                </a>
               </div>
-            ))}
+            )}
           </div>
         )}
       </HostModal>

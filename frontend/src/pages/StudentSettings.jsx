@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 
 function StudentSettings() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -56,6 +56,7 @@ function StudentSettings() {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
         setFormData(prev => ({ ...prev, profilePic: res.data.profilePic }));
+        if (updateUser) updateUser({ profilePic: res.data.profilePic });
         addToast('Profile photo updated successfully!', 'success');
       } catch (err) {
         addToast('Failed to update photo', 'error');
@@ -73,6 +74,7 @@ function StudentSettings() {
           branch: formData.branch,
         }
       });
+      if (updateUser) updateUser({ name: formData.name });
       addToast('Student profile settings saved successfully!', 'success');
     } catch (err) {
       addToast('Failed to save settings', 'error');

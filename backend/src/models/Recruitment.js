@@ -11,6 +11,10 @@ const recruitmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    formId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Form',
+    },
     description: {
       type: String,
     },

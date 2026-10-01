@@ -3,6 +3,7 @@ import { Plus, Briefcase, Users, CalendarCheck, UserCheck, Inbox, X } from 'luci
 import HostPageHeader from '../components/HostPageHeader';
 import HostStatCard from '../components/HostStatCard';
 import HostModal from '../components/HostModal';
+import FormBuilder from '../components/FormBuilder';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
@@ -13,6 +14,9 @@ function HostRecruitment() {
   const [applicantsCount, setApplicantsCount] = useState(0);
   const [interviewsCount, setInterviewsCount] = useState(0);
   const [hiredCount, setHiredCount] = useState(0);
+  
+  const [attachForm, setAttachForm] = useState(false);
+  const [formFields, setFormFields] = useState([]);
   
   const { addToast } = useToast();
 
@@ -70,6 +74,21 @@ function HostRecruitment() {
     }
 
     try {
+      let createdFormId = null;
+      if (attachForm && formFields.length > 0) {
+        const formPayload = {
+          title: `${payload.title} - Application Form`,
+          description: `Application form for ${payload.title}`,
+          fields: formFields
+        };
+        const formRes = await api.post('/forms', formPayload);
+        createdFormId = formRes.data._id;
+      }
+
+      if (createdFormId) {
+        payload.formId = createdFormId;
+      }
+
       await api.post('/recruitments', payload);
       addToast('Vacancy published successfully!', 'success');
       setIsModalOpen(false);
@@ -96,7 +115,11 @@ function HostRecruitment() {
         title="Recruitment Dashboard"
         subtitle="Manage vacancies, view recruitment processes, and analyze applicant profiles."
         action={
-          <button className="host-recruitment__publish-btn" onClick={() => setIsModalOpen(true)}>
+          <button className="host-recruitment__publish-btn" onClick={() => {
+            setAttachForm(false);
+            setFormFields([]);
+            setIsModalOpen(true);
+          }}>
             <Plus size={18} strokeWidth={2} />
             <span>Publish Vacancy</span>
           </button>
@@ -193,6 +216,25 @@ function HostRecruitment() {
             <textarea name="description" className="host-modal__textarea" placeholder="Describe the responsibilities..." required />
           </div>
 
+          <div className="host-modal__field" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <label className="host-modal__label" style={{ marginBottom: 0 }}>Attach Application Form</label>
+              <label className="switch" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={attachForm}
+                  onChange={e => setAttachForm(e.target.checked)}
+                />
+                <span style={{ fontSize: '14px' }}>{attachForm ? 'Enabled' : 'Disabled'}</span>
+              </label>
+            </div>
+            
+            {attachForm && (
+              <div style={{ marginTop: '16px' }}>
+                <FormBuilder fields={formFields} setFields={setFormFields} />
+              </div>
+            )}
+          </div>
         </form>
       </HostModal>
     </div>

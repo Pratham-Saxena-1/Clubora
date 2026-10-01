@@ -31,7 +31,7 @@ exports.signup = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    res.status(201).json({ accessToken, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.status(201).json({ accessToken, user: { id: user._id, name: user.name, email: user.email, role: user.role, profilePic: user.profilePic } });
   } catch (error) {
     next(error);
   }
@@ -60,7 +60,7 @@ exports.login = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
-    res.json({ accessToken, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.json({ accessToken, user: { id: user._id, name: user.name, email: user.email, role: user.role, profilePic: user.profilePic } });
   } catch (error) {
     next(error);
   }

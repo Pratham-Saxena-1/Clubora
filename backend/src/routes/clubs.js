@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getClubs, getClub, getMyClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember, addTeamMember, removeTeamMember, createGallery, removeGallery } = require('../controllers/clubController');
+const { getClubs, getClub, getMyClub, createClub, updateClub, uploadLogo, getMembers, addMember, removeMember, addTeamMember, removeTeamMember, createGallery, removeGallery, addGalleryImages, removeGalleryImage } = require('../controllers/clubController');
 const { authenticate, authorize, authorizeOwner } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const upload = require('../middleware/upload');
@@ -40,5 +40,7 @@ router.post('/:id/members', authenticate, authorizeOwner(isClubOwner), validate(
 router.delete('/:id/members/:userId', authenticate, authorizeOwner(isClubOwner), removeMember);
 router.post('/:id/galleries', authenticate, authorizeOwner(isClubOwner), upload.fields([{ name: 'thumbnailImage', maxCount: 1 }, { name: 'galleryImages', maxCount: 10 }]), createGallery);
 router.delete('/:id/galleries/:galleryId', authenticate, authorizeOwner(isClubOwner), removeGallery);
+router.post('/:id/galleries/:galleryId/images', authenticate, authorizeOwner(isClubOwner), upload.array('galleryImages', 10), addGalleryImages);
+router.delete('/:id/galleries/:galleryId/images', authenticate, authorizeOwner(isClubOwner), removeGalleryImage);
 
 module.exports = router;

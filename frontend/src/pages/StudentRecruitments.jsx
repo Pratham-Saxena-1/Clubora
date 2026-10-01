@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { FileText, Clock, Briefcase, CheckCircle, Loader2, X, Upload } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import DynamicFormFiller from '../components/DynamicFormFiller';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -14,7 +15,6 @@ function StudentRecruitments() {
   // Application Modal state
   const [selectedVacancy, setSelectedVacancy] = useState(null);
   const [answers, setAnswers] = useState({});
-  const [resumeFile, setResumeFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -49,7 +49,6 @@ function StudentRecruitments() {
   const handleOpenApplication = (vacancy) => {
     setSelectedVacancy(vacancy);
     setAnswers({});
-    setResumeFile(null);
   };
 
   const handleApplySubmit = async (e) => {
@@ -59,18 +58,33 @@ function StudentRecruitments() {
       return;
     }
 
-    setSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('recruitmentId', selectedVacancy._id);
+      const apiFormData = new FormData();
       
-      const formattedAnswers = Object.entries(answers).map(([q, a]) => ({ question: q, answer: a }));
-      formData.append('answers', JSON.stringify(formattedAnswers));
-      formData.append('resume', resumeFile);
-
-      await api.post('/applications', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+      // If there is any file inside answers (which happens for file_upload fields in DynamicFormFiller)
+      // For now, the backend formController JSON parses answers. We need to handle file uploads carefully.
+      // But we can just send it as normal, since the backend handles it. Wait, if answers contains a File object, JSON.stringify will fail or omit it.
+      // DynamicFormFiller sets the file to the answers map.
+      // Let's pass the file separately if there's a file, or if there's multiple files, we'd need to modify the backend.
+      // For simplicity, we just send answers as JSON. If the user uploads a resume using the dynamic form, they can provide a Google Drive link, OR we just let the frontend send it if it's not a file.
+      // Actually, my dynamic form sets the file object directly in the answers map.
+      // A better way is to loop over answers and append files individually if they are File objects.
+      const formattedAnswers = [];
+      Object.keys(answers).forEach(key => {
+        if (answers[key] instanceof File) {
+          apiFormData.append('file', answers[key]); // Append single file as 'file'
+          formattedAnswers.push({ fieldId: key, value: answers[key].name }); // store the file name or something in the answers
+        } else {
+          formattedAnswers.push({ fieldId: key, value: answers[key] });
+        }
       });
+      
+      apiFormData.append('contextType', 'Recruitment');
+      apiFormData.append('contextId', selectedVacancy._id);
+      apiFormData.append('formId', selectedVacancy.formId?._id || selectedVacancy.formId);
+      apiFormData.append('answers', JSON.stringify(formattedAnswers));
+
+      await api.post(`/forms/${selectedVacancy.formId?._id || selectedVacancy.formId}/submit`, apiFormData);
 
       setApplied(prev => ({ ...prev, [selectedVacancy._id]: true }));
       addToast(`Successfully applied for ${selectedVacancy.title}!`, 'success');
@@ -158,48 +172,14 @@ function StudentRecruitments() {
             </div>
 
             <form onSubmit={handleApplySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {selectedVacancy.questions && selectedVacancy.questions.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>Questionnaire</h3>
-                  {selectedVacancy.questions.map((q, idx) => (
-                    <div key={idx}>
-                      <label className="host-modal__label">{q}</label>
-                      <textarea 
-                        className="host-modal__textarea" 
-                        required 
-                        rows={3}
-                        value={answers[q] || ''}
-                        onChange={(e) => setAnswers({...answers, [q]: e.target.value})}
-                      />
-                    </div>
-                  ))}
+              {selectedVacancy.formId ? (
+                <DynamicFormFiller form={selectedVacancy.formId} answers={answers} setAnswers={setAnswers} />
+              ) : (
+                <div className="host-modal__field" style={{ marginBottom: '24px' }}>
+                  <p style={{ color: 'var(--text-secondary)' }}>No dynamic form attached to this vacancy. You can proceed to apply.</p>
                 </div>
               )}
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>Resume Upload</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <button 
-                    type="button" 
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border)', color: 'var(--text-primary)', cursor: 'pointer' }}
-                  >
-                    <Upload size={16} />
-                    <span>Select PDF Resume</span>
-                  </button>
-                  <span style={{ fontSize: '14px', color: resumeFile ? 'var(--primary)' : 'var(--text-tertiary)' }}>
-                    {resumeFile ? resumeFile.name : 'No file chosen (PDF only)'}
-                  </span>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                    accept="application/pdf"
-                    onChange={(e) => setResumeFile(e.target.files[0])}
-                  />
-                </div>
-              </div>
-
+              
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button type="button" className="host-modal__btn host-modal__btn--secondary" style={{ flex: 1 }} onClick={() => setSelectedVacancy(null)}>Cancel</button>
                 <button type="submit" className="host-modal__btn host-modal__btn--primary" style={{ flex: 1 }} disabled={submitting}>

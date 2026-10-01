@@ -231,7 +231,13 @@ function HostTopBar() {
           style={{ cursor: 'pointer', border: 'none', background: 'var(--bg-tertiary)' }}
           aria-label="Go to settings"
         >
-          <div className="host-topbar__avatar">{user?.name ? user.name.substring(0,2).toUpperCase() : 'HO'}</div>
+          <div className="host-topbar__avatar" style={{ padding: 0, overflow: 'hidden' }}>
+            {user?.profilePic ? (
+              <img src={`http://localhost:5000${user.profilePic}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              user?.name ? user.name.substring(0,2).toUpperCase() : 'HO'
+            )}
+          </div>
           <div className="host-topbar__user-info" style={{ textAlign: 'left' }}>
             <span className="host-topbar__user-name">{user?.name || 'Host'}</span>
             <span className="host-topbar__user-role">{user?.role || 'Host'}</span>

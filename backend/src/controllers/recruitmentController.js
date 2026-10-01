@@ -3,7 +3,7 @@ const Club = require('../models/Club');
 
 exports.getRecruitments = async (req, res, next) => {
   try {
-    const recruitments = await Recruitment.find({ status: 'Open' }).populate('clubId', 'name logo');
+    const recruitments = await Recruitment.find({ status: 'Open' }).populate('clubId', 'name logo').populate('formId');
     res.json(recruitments);
   } catch (error) {
     next(error);
@@ -12,7 +12,7 @@ exports.getRecruitments = async (req, res, next) => {
 
 exports.getClubRecruitments = async (req, res, next) => {
   try {
-    const recruitments = await Recruitment.find({ clubId: req.params.clubId }).populate('clubId', 'name logo');
+    const recruitments = await Recruitment.find({ clubId: req.params.clubId }).populate('clubId', 'name logo').populate('formId');
     res.json(recruitments);
   } catch (error) {
     next(error);
@@ -21,7 +21,7 @@ exports.getClubRecruitments = async (req, res, next) => {
 
 exports.getRecruitment = async (req, res, next) => {
   try {
-    const recruitment = await Recruitment.findById(req.params.id).populate('clubId', 'name logo');
+    const recruitment = await Recruitment.findById(req.params.id).populate('clubId', 'name logo').populate('formId');
     if (!recruitment) {
       return res.status(404).json({ error: { message: 'Recruitment not found', code: 'NOT_FOUND' } });
     }

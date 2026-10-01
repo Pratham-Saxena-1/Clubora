@@ -29,7 +29,7 @@ exports.getStudentApplications = async (req, res, next) => {
     const applications = await Application.find({ studentId: req.params.studentId }).populate({
       path: 'recruitmentId',
       populate: { path: 'clubId', select: 'name' }
-    });
+    }).populate({ path: 'formResponseId', populate: { path: 'formId' } });
     res.json(applications);
   } catch (error) {
     next(error);
@@ -38,7 +38,9 @@ exports.getStudentApplications = async (req, res, next) => {
 
 exports.getRecruitmentApplicants = async (req, res, next) => {
   try {
-    const applications = await Application.find({ recruitmentId: req.params.recruitmentId }).populate('studentId', 'name email profilePic contactNumber');
+    const applications = await Application.find({ recruitmentId: req.params.recruitmentId })
+      .populate('studentId', 'name email profilePic contactNumber')
+      .populate({ path: 'formResponseId', populate: { path: 'formId' } });
     res.json(applications);
   } catch (error) {
     next(error);
@@ -68,7 +70,8 @@ exports.getClubApplications = async (req, res, next) => {
     const recruitmentIds = recruitments.map(r => r._id);
     const applications = await Application.find({ recruitmentId: { $in: recruitmentIds } })
       .populate('studentId', 'name email profilePic contactNumber')
-      .populate('recruitmentId', 'title type');
+      .populate('recruitmentId', 'title type')
+      .populate({ path: 'formResponseId', populate: { path: 'formId' } });
     res.json(applications);
   } catch (error) {
     next(error);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Camera, Pencil, Image as ImageIcon, X, Loader2, Phone, Mail } from 'lucide-react';
+import { Plus, Camera, Pencil, Image as ImageIcon, X, Loader2, Phone, Mail, ChevronLeft, ChevronRight } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostModal from '../components/HostModal';
 import { useToast } from '../context/ToastContext';
@@ -16,7 +16,7 @@ function HostClubProfile() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPastEventModalOpen, setIsPastEventModalOpen] = useState(false);
   const [galleryEvent, setGalleryEvent] = useState(null);
-  const [expandedPhoto, setExpandedPhoto] = useState(null);
+  const [expandedPhotoIndex, setExpandedPhotoIndex] = useState(null);
   const [memberDetails, setMemberDetails] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoError, setPhotoError] = useState('');
@@ -142,10 +142,45 @@ function HostClubProfile() {
 
   const openGallery = (evt) => {
     setGalleryEvent(evt);
-    setExpandedPhoto(null);
+    setExpandedPhotoIndex(null);
   };
 
-  // handleUploadGallery removed since we upload images on gallery creation
+  const handleUploadMore = async (e) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    const formData = new FormData();
+    Array.from(files).forEach(file => formData.append('galleryImages', file));
+    try {
+      const { data } = await api.post(`/clubs/${clubInfo._id}/galleries/${galleryEvent.id || galleryEvent._id}/images`, formData);
+      setClubInfo(data);
+      const updatedGallery = data.galleries.find(g => g._id === (galleryEvent.id || galleryEvent._id));
+      setGalleryEvent(updatedGallery);
+      fetchClub();
+      addToast('Photos uploaded successfully', 'success');
+    } catch (err) {
+      addToast('Failed to upload photos', 'error');
+    }
+  };
+
+  const handleDeletePhoto = async (photoUrl) => {
+    if (!window.confirm('Are you sure you want to permanently delete this photo?')) return;
+    try {
+      const { data } = await api.delete(`/clubs/${clubInfo._id}/galleries/${galleryEvent.id || galleryEvent._id}/images`, { data: { imageUrl: photoUrl } });
+      setClubInfo(data);
+      const updatedGallery = data.galleries.find(g => g._id === (galleryEvent.id || galleryEvent._id));
+      setGalleryEvent(updatedGallery);
+      fetchClub();
+      
+      if (updatedGallery.images.length === 0) {
+        setExpandedPhotoIndex(null);
+      } else if (expandedPhotoIndex >= updatedGallery.images.length) {
+        setExpandedPhotoIndex(updatedGallery.images.length - 1);
+      }
+      addToast('Photo deleted successfully', 'success');
+    } catch (err) {
+      addToast('Failed to delete photo', 'error');
+    }
+  };
 
   const handleCreatePastEvent = async (e) => {
     e.preventDefault();
@@ -475,45 +510,59 @@ function HostClubProfile() {
       {/* Gallery Modal */}
       <HostModal
         isOpen={!!galleryEvent}
-        onClose={() => { setGalleryEvent(null); setExpandedPhoto(null); }}
+        onClose={() => { setGalleryEvent(null); setExpandedPhotoIndex(null); }}
         title={galleryEvent?.title}
       >
         {galleryEvent && (
           <div className="arc-gallery-wrapper">
-            {expandedPhoto ? (
-              <div className="arc-gallery-expanded">
-                <button className="arc-gallery-close-btn" onClick={() => setExpandedPhoto(null)}>
-                  <X size={24} color="#fff" />
-                </button>
-                <img src={expandedPhoto} alt="Expanded view" className="arc-gallery-expanded-img" />
+            {expandedPhotoIndex !== null ? (
+              <div className="arc-gallery-expanded" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', position: 'relative', height: '100%' }}>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <img src={`http://localhost:5000${galleryEvent.images[expandedPhotoIndex]}`} alt="Expanded view" className="arc-gallery-expanded-img" style={{ maxHeight: '80vh', maxWidth: '100%', display: 'block', objectFit: 'contain' }} />
+                  
+                  {/* Left Arrow */}
+                  <button className="arc-gallery-nav-btn" onClick={(e) => { e.stopPropagation(); setExpandedPhotoIndex(prev => prev > 0 ? prev - 1 : galleryEvent.images.length - 1); }} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.8)', border: 'none', color: '#000', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', cursor: 'pointer', zIndex: 20 }}>
+                    <ChevronLeft size={16} strokeWidth={2.5} />
+                  </button>
+
+                  {/* Right Arrow */}
+                  <button className="arc-gallery-nav-btn" onClick={(e) => { e.stopPropagation(); setExpandedPhotoIndex(prev => prev < galleryEvent.images.length - 1 ? prev + 1 : 0); }} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.8)', border: 'none', color: '#000', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', cursor: 'pointer', zIndex: 20 }}>
+                    <ChevronRight size={16} strokeWidth={2.5} />
+                  </button>
+                  
+                  {/* Close Cross */}
+                  <button className="arc-gallery-close-btn" onClick={() => setExpandedPhotoIndex(null)} style={{ position: 'absolute', top: '12px', right: '12px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', zIndex: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <X size={24} strokeWidth={2.5} />
+                  </button>
+                </div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                {/* Upload form removed */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px', marginBottom: '16px' }}>
+                  <label className="host-modal__btn host-modal__btn--primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px', fontSize: '13px' }}>
+                    <Plus size={14} /> Upload More Photos
+                    <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={handleUploadMore} />
+                  </label>
+                </div>
                 {(galleryEvent.images?.length > 0) ? (
-                  <div className="arc-gallery" style={{ flex: 1, minHeight: '300px' }}>
-                    {(galleryEvent.images || []).filter(Boolean).map((img, idx, arr) => {
-                      const total = arr.length;
-                      const middle = (total - 1) / 2;
-                      const offset = idx - middle;
-                      const rotation = offset * 15;
-                      const translationY = Math.abs(offset) * 15;
-                      
-                      return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '16px', padding: '16px', overflowY: 'auto', flex: 1, minHeight: '300px' }}>
+                    {(galleryEvent.images || []).filter(Boolean).map((img, idx) => (
+                      <div key={idx} style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg-secondary)' }}>
                         <img 
-                          key={idx} 
                           src={`http://localhost:5000${img}`} 
                           alt={`Event photo ${idx+1}`} 
-                          className="arc-gallery__item"
-                          style={{
-                            '--rot': `${rotation}deg`,
-                            '--transY': `${translationY}px`,
-                            zIndex: total - Math.abs(offset)
-                          }}
-                          onClick={() => setExpandedPhoto(`http://localhost:5000${img}`)}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          onClick={() => setExpandedPhotoIndex(idx)}
                         />
-                      );
-                    })}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeletePhoto(img); }}
+                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,255,255,0.8)', border: 'none', color: '#000', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                          title="Remove Photo"
+                        >
+                          <X size={14} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', minHeight: '200px' }}>

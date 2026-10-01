@@ -3,6 +3,7 @@ import { Plus, ArrowRight, X } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostEventCard from '../components/HostEventCard';
 import HostModal from '../components/HostModal';
+import FormBuilder from '../components/FormBuilder';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
@@ -11,6 +12,8 @@ function HostDashboard() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [events, setEvents] = useState([]);
   const [club, setClub] = useState(null);
+  const [attachForm, setAttachForm] = useState(false);
+  const [formFields, setFormFields] = useState([]);
   
   // File inputs state
   const [bannerFileName, setBannerFileName] = useState('No file chosen');
@@ -58,6 +61,27 @@ function HostDashboard() {
     formData.set('dateTime', dateTime);
     
     try {
+      let createdFormId = null;
+      if (attachForm && formFields.length > 0) {
+        // Create or update form first
+        const formPayload = {
+          title: `${formData.get('title')} - Registration Form`,
+          description: `Registration form for ${formData.get('title')}`,
+          fields: formFields
+        };
+        if (editingEvent?.formId) {
+          await api.put(`/forms/${editingEvent.formId._id || editingEvent.formId}`, formPayload);
+          createdFormId = editingEvent.formId._id || editingEvent.formId;
+        } else {
+          const formRes = await api.post('/forms', formPayload);
+          createdFormId = formRes.data._id;
+        }
+      }
+
+      if (createdFormId) {
+        formData.set('formId', createdFormId);
+      }
+      
       if (editingEvent) {
         await api.put(`/events/${editingEvent._id}`, formData);
         addToast('Event updated successfully!', 'success');
@@ -89,12 +113,21 @@ function HostDashboard() {
   const openCreateModal = () => {
     setEditingEvent(null);
     setBannerFileName('No file chosen');
+    setAttachForm(false);
+    setFormFields([]);
     setIsModalOpen(true);
   };
   
   const openEditModal = (event) => {
     setEditingEvent(event);
     setBannerFileName('No file chosen');
+    if (event.formId) {
+      setAttachForm(true);
+      setFormFields(event.formId.fields || []);
+    } else {
+      setAttachForm(false);
+      setFormFields([]);
+    }
     setIsModalOpen(true);
   };
 
@@ -265,6 +298,26 @@ function HostDashboard() {
                 onChange={(e) => setBannerFileName(e.target.files[0]?.name || 'No file chosen')}
               />
             </div>
+          </div>
+          
+          <div className="host-modal__field" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <label className="host-modal__label" style={{ marginBottom: 0 }}>Attach Registration Form</label>
+              <label className="switch" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={attachForm}
+                  onChange={e => setAttachForm(e.target.checked)}
+                />
+                <span style={{ fontSize: '14px' }}>{attachForm ? 'Enabled' : 'Disabled'}</span>
+              </label>
+            </div>
+            
+            {attachForm && (
+              <div style={{ marginTop: '16px' }}>
+                <FormBuilder fields={formFields} setFields={setFormFields} />
+              </div>
+            )}
           </div>
         </form>
       </HostModal>

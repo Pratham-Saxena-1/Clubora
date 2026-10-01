@@ -7,7 +7,7 @@ exports.getEvents = async (req, res, next) => {
     const { clubId } = req.query;
     let query = {};
     if (clubId) query.clubId = clubId;
-    const events = await Event.find(query).populate('clubId', 'name logo');
+    const events = await Event.find(query).populate('clubId', 'name logo').populate('formId');
     res.json(events);
   } catch (error) {
     next(error);
@@ -16,7 +16,7 @@ exports.getEvents = async (req, res, next) => {
 
 exports.getEvent = async (req, res, next) => {
   try {
-    const event = await Event.findById(req.params.id).populate('clubId', 'name logo');
+    const event = await Event.findById(req.params.id).populate('clubId', 'name logo').populate('formId');
     if (!event) {
       return res.status(404).json({ error: { message: 'Event not found', code: 'NOT_FOUND' } });
     }
@@ -92,7 +92,7 @@ exports.getMyRegistrations = async (req, res, next) => {
     const registrations = await EventRegistration.find({ studentId: req.user.id }).populate({
       path: 'eventId',
       populate: { path: 'clubId', select: 'name' }
-    });
+    }).populate({ path: 'formResponseId', populate: { path: 'formId' } });
     res.json(registrations);
   } catch (error) {
     next(error);
@@ -173,7 +173,9 @@ exports.uploadGalleryImage = async (req, res, next) => {
 
 exports.getEventRegistrations = async (req, res, next) => {
   try {
-    const registrations = await EventRegistration.find({ eventId: req.params.id }).populate('studentId', 'name email profilePic');
+    const registrations = await EventRegistration.find({ eventId: req.params.id })
+      .populate('studentId', 'name email profilePic')
+      .populate({ path: 'formResponseId', populate: { path: 'formId' } });
     res.json(registrations);
   } catch (error) {
     next(error);
@@ -188,7 +190,8 @@ exports.getClubRegistrations = async (req, res, next) => {
     const eventIds = events.map(e => e._id);
     const registrations = await EventRegistration.find({ eventId: { $in: eventIds } })
       .populate('studentId', 'name email regNumber')
-      .populate('eventId', 'title');
+      .populate('eventId', 'title')
+      .populate({ path: 'formResponseId', populate: { path: 'formId' } });
     res.json(registrations);
   } catch (error) {
     next(error);
