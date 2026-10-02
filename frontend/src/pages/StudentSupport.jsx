@@ -38,14 +38,20 @@ function StudentSupport() {
     try {
       const description = `Priority: ${formData.priority}\nCategory: ${formData.category}\nClub: ${formData.club || 'General'}\n\nMessage:\n${formData.message}`;
       
-      const { data } = await api.post('/support', {
+      const payload = {
         type: 'Support',
         subject: formData.subject,
         description: description
-      });
+      };
+      
+      if (formData.clubId && formData.clubId !== 'General') {
+        payload.clubId = formData.clubId;
+      }
+      
+      const { data } = await api.post('/support', payload);
 
       setTicketRef(data._id.substring(0, 8));
-      setFormData({ club: '', category: 'Event Participation', priority: 'Standard', subject: '', message: '' });
+      setFormData({ club: '', clubId: '', category: 'Event Participation', priority: 'Standard', subject: '', message: '' });
       addToast('Message sent successfully!', 'success');
     } catch (err) {
       addToast('Failed to send message', 'error');
@@ -98,11 +104,19 @@ function StudentSupport() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                   <div className="host-modal__field" style={{ marginBottom: 0 }}>
                     <label className="host-modal__label">Select Organization</label>
-                    <select className="host-modal__input" value={formData.club} onChange={(e) => setFormData({...formData, club: e.target.value})} required>
+                    <select 
+                      className="host-modal__input" 
+                      value={formData.clubId || ''} 
+                      onChange={(e) => {
+                        const selectedText = e.target.options[e.target.selectedIndex].text;
+                        setFormData({...formData, clubId: e.target.value, club: selectedText});
+                      }} 
+                      required
+                    >
                       <option value="" disabled>Choose a club...</option>
-                      <option value="General University Support">General University Support</option>
+                      <option value="General">General University Support</option>
                       {clubs.map(club => (
-                        <option key={club._id} value={club.name}>{club.name}</option>
+                        <option key={club._id} value={club._id}>{club.name}</option>
                       ))}
                     </select>
                   </div>

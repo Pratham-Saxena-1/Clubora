@@ -23,6 +23,10 @@ const ticketSchema = new mongoose.Schema(
       type: String,
       enum: ['Support', 'Feedback'],
     },
+    clubId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Club',
+    },
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Event',

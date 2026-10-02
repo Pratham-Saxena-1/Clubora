@@ -11,6 +11,7 @@ const ticketSchema = z.object({
   description: z.string().optional(),
   type: z.enum(['Support', 'Feedback']).optional(),
   eventId: z.string().optional(),
+  clubId: z.string().optional(),
 });
 
 router.post('/', authenticate, validate(ticketSchema), createTicket);

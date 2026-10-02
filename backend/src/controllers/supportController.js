@@ -37,7 +37,17 @@ exports.getMyTickets = async (req, res, next) => {
 
 exports.getAllTickets = async (req, res, next) => {
   try {
-    const tickets = await Ticket.find().populate('userId', 'name email regNumber').sort({ createdAt: -1 });
+    const Club = require('../models/Club');
+    const club = await Club.findOne({ hostId: req.user.id });
+    
+    if (!club) {
+      return res.json([]);
+    }
+
+    const tickets = await Ticket.find({ clubId: club._id })
+      .populate('userId', 'name email regNumber')
+      .sort({ createdAt: -1 });
+      
     res.json(tickets);
   } catch (error) {
     next(error);
