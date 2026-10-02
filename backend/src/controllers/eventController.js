@@ -107,7 +107,18 @@ exports.verifyPayment = async (req, res, next) => {
       req.params.id,
       { paymentVerified: true },
       { new: true }
-    );
+    ).populate('eventId', 'title');
+    
+    if (registration && registration.studentId) {
+      const Notification = require('../models/Notification');
+      await Notification.create({
+        userId: registration.studentId,
+        text: `Your payment for ${registration.eventId?.title} has been verified.`,
+        type: 'system',
+        link: '/student/events'
+      });
+    }
+
     res.json(registration);
   } catch (error) {
     next(error);
@@ -120,7 +131,7 @@ exports.uploadQrTicket = async (req, res, next) => {
       return res.status(400).json({ error: { message: 'Please upload an image', code: 'BAD_REQUEST' } });
     }
     
-    const registration = await EventRegistration.findById(req.params.id);
+    const registration = await EventRegistration.findById(req.params.id).populate('eventId', 'title');
     if (!registration) {
       return res.status(404).json({ error: { message: 'Registration not found', code: 'NOT_FOUND' } });
     }
@@ -133,6 +144,16 @@ exports.uploadQrTicket = async (req, res, next) => {
     const filePath = `/uploads/event-qr/${req.file.filename}`;
     registration.qrTicket = filePath;
     await registration.save();
+    
+    if (registration.studentId) {
+      const Notification = require('../models/Notification');
+      await Notification.create({
+        userId: registration.studentId,
+        text: `Your ticket for ${registration.eventId?.title} is ready.`,
+        type: 'system',
+        link: '/student/events'
+      });
+    }
     
     res.json(registration);
   } catch (error) {
@@ -167,7 +188,7 @@ exports.uploadCertificate = async (req, res, next) => {
       return res.status(400).json({ error: { message: 'Please upload a certificate', code: 'BAD_REQUEST' } });
     }
 
-    const registration = await EventRegistration.findById(req.params.id);
+    const registration = await EventRegistration.findById(req.params.id).populate('eventId', 'title');
     if (!registration) {
       return res.status(404).json({ error: { message: 'Registration not found', code: 'NOT_FOUND' } });
     }
@@ -180,6 +201,16 @@ exports.uploadCertificate = async (req, res, next) => {
     const filePath = `/uploads/${req.file.filename}`;
     registration.certificate = filePath;
     await registration.save();
+    
+    if (registration.studentId) {
+      const Notification = require('../models/Notification');
+      await Notification.create({
+        userId: registration.studentId,
+        text: `You have received a certificate for ${registration.eventId?.title}.`,
+        type: 'system',
+        link: '/student/events'
+      });
+    }
     
     res.json(registration);
   } catch (error) {

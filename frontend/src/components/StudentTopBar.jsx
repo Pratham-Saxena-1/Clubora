@@ -18,8 +18,18 @@ function StudentTopBar() {
   const [studentRegisteredEvents, setStudentRegisteredEvents] = useState([]);
   
   useEffect(() => {
+    let notifInterval;
     if (user?.id) {
-      api.get('/notifications/me').then(res => setNotifications(res.data)).catch(console.error);
+      const fetchNotifs = () => {
+        api.get('/notifications/me').then(res => setNotifications(res.data)).catch(console.error);
+      };
+      
+      // Fetch immediately
+      fetchNotifs();
+      
+      // Poll every 10 seconds
+      notifInterval = setInterval(fetchNotifs, 10000);
+
       api.get('/events/registrations/student/me').then(res => {
         const events = res.data.map(reg => ({
           id: reg._id,
@@ -31,6 +41,9 @@ function StudentTopBar() {
         setStudentRegisteredEvents(events);
       }).catch(console.error);
     }
+    return () => {
+      if (notifInterval) clearInterval(notifInterval);
+    };
   }, [user]);
 
   const markAsRead = async (id) => {

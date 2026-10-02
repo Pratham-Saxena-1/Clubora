@@ -54,7 +54,19 @@ exports.updateApplicationStatus = async (req, res, next) => {
       req.params.id,
       { status },
       { new: true, runValidators: true }
-    );
+    ).populate('recruitmentId', 'title');
+    
+    // Notify student
+    if (application && application.studentId) {
+      const Notification = require('../models/Notification');
+      await Notification.create({
+        userId: application.studentId,
+        text: `Your application for ${application.recruitmentId?.title || 'a role'} was updated to: ${status}`,
+        type: 'system',
+        link: '/student/recruitments'
+      });
+    }
+
     res.json(application);
   } catch (error) {
     next(error);

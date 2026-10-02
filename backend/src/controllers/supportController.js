@@ -9,15 +9,17 @@ exports.createTicket = async (req, res, next) => {
       userId: req.user.id
     });
 
-    const hosts = await User.find({ role: 'Host' });
-    const notifications = hosts.map(host => ({
-      userId: host._id,
-      text: `New query received: ${ticket.subject}`,
-      type: 'system',
-      link: '/host/support'
-    }));
-    if (notifications.length > 0) {
-      await Notification.insertMany(notifications);
+    if (ticket.clubId) {
+      const Club = require('../models/Club');
+      const club = await Club.findById(ticket.clubId);
+      if (club && club.hostId) {
+        await Notification.create({
+          userId: club.hostId,
+          text: `New query received: ${ticket.subject}`,
+          type: 'system',
+          link: '/host/support'
+        });
+      }
     }
 
     res.status(201).json(ticket);
@@ -66,6 +68,16 @@ exports.replyToTicket = async (req, res, next) => {
       text
     });
     await ticket.save();
+
+    if (req.user.role === 'Host' && ticket.userId) {
+      await Notification.create({
+        userId: ticket.userId,
+        text: `New reply on your ticket: ${ticket.subject}`,
+        type: 'system',
+        link: '/student/support'
+      });
+    }
+
     res.json(ticket);
   } catch (error) {
     next(error);

@@ -18,8 +18,18 @@ function HostTopBar() {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   
   useEffect(() => {
+    let notifInterval;
     if (user?.id) {
-      api.get('/notifications/me').then(res => setNotifications(res.data)).catch(console.error);
+      const fetchNotifs = () => {
+        api.get('/notifications/me').then(res => setNotifications(res.data)).catch(console.error);
+      };
+      
+      // Fetch immediately
+      fetchNotifs();
+      
+      // Poll every 10 seconds
+      notifInterval = setInterval(fetchNotifs, 10000);
+
       api.get('/events').then(res => {
         const events = res.data.map(event => {
           let dateStr = null;
@@ -40,6 +50,9 @@ function HostTopBar() {
         setUpcomingEvents(events);
       }).catch(console.error);
     }
+    return () => {
+      if (notifInterval) clearInterval(notifInterval);
+    };
   }, [user]);
 
   const markAsRead = async (id) => {
