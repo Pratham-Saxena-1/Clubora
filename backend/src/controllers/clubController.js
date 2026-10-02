@@ -17,9 +17,11 @@ exports.getClubs = async (req, res, next) => {
     
     const Event = require('../models/Event');
     const enrichedClubs = await Promise.all(clubs.map(async (club) => {
-      const memberCount = await Membership.countDocuments({ clubId: club._id });
-      const eventsHosted = await Event.countDocuments({ hostId: club.hostId });
-      return { ...club.toObject(), memberCount, eventsHosted };
+      const membershipCount = await Membership.countDocuments({ clubId: club._id });
+      const teamCount = club.teamMembers ? club.teamMembers.length : 0;
+      const memberCount = membershipCount + teamCount;
+      const activeEvents = await Event.countDocuments({ clubId: club._id, dateTime: { $gte: new Date() } });
+      return { ...club.toObject(), memberCount, eventsHosted: activeEvents };
     }));
     
     res.json(enrichedClubs);

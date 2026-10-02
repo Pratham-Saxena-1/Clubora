@@ -53,10 +53,7 @@ function StudentRecruitments() {
 
   const handleApplySubmit = async (e) => {
     e.preventDefault();
-    if (!resumeFile) {
-      addToast('Please upload your resume (PDF)', 'error');
-      return;
-    }
+    setSubmitting(true);
 
     try {
       const apiFormData = new FormData();
@@ -84,7 +81,12 @@ function StudentRecruitments() {
       apiFormData.append('formId', selectedVacancy.formId?._id || selectedVacancy.formId);
       apiFormData.append('answers', JSON.stringify(formattedAnswers));
 
-      await api.post(`/forms/${selectedVacancy.formId?._id || selectedVacancy.formId}/submit`, apiFormData);
+      if (selectedVacancy.formId) {
+        await api.post(`/forms/${selectedVacancy.formId._id || selectedVacancy.formId}/submit`, apiFormData);
+      } else {
+        apiFormData.append('recruitmentId', selectedVacancy._id);
+        await api.post('/applications', apiFormData);
+      }
 
       setApplied(prev => ({ ...prev, [selectedVacancy._id]: true }));
       addToast(`Successfully applied for ${selectedVacancy.title}!`, 'success');

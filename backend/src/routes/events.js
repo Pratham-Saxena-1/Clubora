@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, verifyPayment, uploadQrTicket, uploadCertificate, getEventRegistrations, getClubRegistrations, uploadGalleryImage, deleteEvent } = require('../controllers/eventController');
+const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, verifyPayment, uploadQrTicket, uploadCertificate, deleteQrTicket, deleteCertificate, getEventRegistrations, getClubRegistrations, uploadGalleryImage, deleteEvent } = require('../controllers/eventController');
 const { authenticate, authorizeOwner, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
@@ -17,8 +17,9 @@ const eventSchema = z.object({
   location: z.string().optional(),
   dateTime: z.string().datetime().or(z.date()),
   capacity: z.coerce.number().optional(),
-  isPaid: z.coerce.boolean().optional(),
+  isPaid: z.union([z.boolean(), z.string().transform(v => v === 'true')]).optional(),
   fee: z.coerce.number().optional(),
+  formId: z.string().optional(),
 });
 
 const updateEventSchema = eventSchema.omit({ clubId: true }).partial();
@@ -53,7 +54,7 @@ router.get('/:id', getEvent);
 
 // Host Event Management
 router.get('/registrations/club', authenticate, authorize('Host'), getClubRegistrations);
-router.post('/', authenticate, authorize('Host'), authorizeOwner(isClubOwner), upload.single('coverImage'), validate(eventSchema), createEvent);
+router.post('/', authenticate, authorize('Host'), upload.single('coverImage'), authorizeOwner(isClubOwner), validate(eventSchema), createEvent);
 router.put('/:id', authenticate, authorizeOwner(isEventOwner), upload.single('coverImage'), validate(updateEventSchema), updateEvent);
 router.delete('/:id', authenticate, authorizeOwner(isEventOwner), deleteEvent);
 router.get('/:id/registrations', authenticate, authorizeOwner(isEventOwner), getEventRegistrations);
@@ -66,7 +67,9 @@ router.post('/:id/register', authenticate, authorize('Student'), upload.single('
 // Payment and QR ticket (Host Action on Registration)
 router.put('/registrations/:id/payment', authenticate, authorizeOwner(isRegistrationOwner), verifyPayment);
 router.post('/registrations/:id/qr-ticket', authenticate, authorizeOwner(isRegistrationOwner), upload.single('qrTicket'), uploadQrTicket);
+router.delete('/registrations/:id/qr-ticket', authenticate, authorizeOwner(isRegistrationOwner), deleteQrTicket);
 router.post('/registrations/:id/certificate', authenticate, authorizeOwner(isRegistrationOwner), upload.single('certificate'), uploadCertificate);
+router.delete('/registrations/:id/certificate', authenticate, authorizeOwner(isRegistrationOwner), deleteCertificate);
 router.delete('/registrations/:id', authenticate, authorizeOwner(isRegistrationOwner), async (req, res, next) => {
   try {
     const reg = await EventRegistration.findById(req.params.id);

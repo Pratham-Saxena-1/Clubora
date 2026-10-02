@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Upload, CheckCircle2 } from 'lucide-react';
+import { Upload, CheckCircle2, RefreshCcw, Trash2 } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
@@ -85,6 +85,28 @@ function HostTicketsCerts() {
     }
   };
 
+  const handleDeleteQR = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to completely remove the QR pass for ${name}?`)) return;
+    try {
+      await api.delete(`/events/registrations/${id}/qr-ticket`);
+      setRegistrations(prev => prev.map(t => t._id === id ? { ...t, qrTicket: null } : t));
+      addToast(`QR Entry Pass removed for ${name}`, 'success');
+    } catch (err) {
+      addToast(`Failed to remove QR for ${name}`, 'error');
+    }
+  };
+
+  const handleDeleteCertificate = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to completely remove the certificate for ${name}?`)) return;
+    try {
+      await api.delete(`/events/registrations/${id}/certificate`);
+      setRegistrations(prev => prev.map(t => t._id === id ? { ...t, certificate: null } : t));
+      addToast(`Certificate removed for ${name}`, 'success');
+    } catch (err) {
+      addToast(`Failed to remove Certificate for ${name}`, 'error');
+    }
+  };
+
   const columns = ['Participant', 'Event', 'QR Entry Pass', 'Certificate'];
 
   const renderRow = (ticket) => {
@@ -107,12 +129,30 @@ function HostTicketsCerts() {
         <td>
           <div className="host-tickets__status-cell">
             {ticket.qrTicket ? (
-              <a href={`http://localhost:5000${ticket.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
-                  <CheckCircle2 size={12} strokeWidth={2.5} />
-                  View Pass
-                </span>
-              </a>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <a href={`http://localhost:5000${ticket.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                  <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
+                    <CheckCircle2 size={12} strokeWidth={2.5} />
+                    View Pass
+                  </span>
+                </a>
+                <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Replace QR Pass">
+                  <input 
+                    type="file" 
+                    accept="image/*,.pdf" 
+                    style={{ display: 'none' }} 
+                    onChange={(e) => handleIssueQR(e, ticket._id, student.name)} 
+                  />
+                  <RefreshCcw size={14} />
+                </label>
+                <button 
+                  onClick={() => handleDeleteQR(ticket._id, student.name)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                  title="Remove QR Pass"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             ) : (
               <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
                 <input 
@@ -130,12 +170,30 @@ function HostTicketsCerts() {
         <td>
           <div className="host-tickets__status-cell">
             {ticket.certificate ? (
-              <a href={`http://localhost:5000${ticket.certificate}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
-                  <CheckCircle2 size={12} strokeWidth={2.5} />
-                  View Cert
-                </span>
-              </a>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <a href={`http://localhost:5000${ticket.certificate}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                  <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
+                    <CheckCircle2 size={12} strokeWidth={2.5} />
+                    View Cert
+                  </span>
+                </a>
+                <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Replace Certificate">
+                  <input 
+                    type="file" 
+                    accept="image/*,.pdf" 
+                    style={{ display: 'none' }} 
+                    onChange={(e) => handleIssueCertificate(e, ticket._id, student.name)} 
+                  />
+                  <RefreshCcw size={14} />
+                </label>
+                <button 
+                  onClick={() => handleDeleteCertificate(ticket._id, student.name)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
+                  title="Remove Certificate"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
             ) : (
               <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
                 <input 

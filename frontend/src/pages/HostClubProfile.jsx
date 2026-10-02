@@ -286,26 +286,56 @@ function HostClubProfile() {
           <section className="host-club-profile__card">
             <h2 className="host-club-profile__card-title">Manage Club Team Hierarchy</h2>
             <div className="host-club-profile__hierarchy">
-              <div className="hierarchy-levels" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div className="hierarchy-tree__content" onClick={() => setMemberDetails({ _id: clubInfo.hostId?._id, name: clubInfo.hostId?.name || 'You', role: 'President', isHost: true })}>
-                    {clubInfo.hostId?.name || 'You'} <br/> <span style={{fontSize: '10px', color: 'var(--text-secondary)'}}>President</span>
+              <div className="hierarchy-levels" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', overflowX: 'auto', paddingBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  <div className="hierarchy-tree__content" onClick={() => setMemberDetails({ _id: clubInfo.hostId?._id, name: clubInfo.hostId?.name || 'You', role: 'President', isHost: true, photo: clubInfo.hostId?.profilePic ? `http://localhost:5000${clubInfo.hostId.profilePic}` : null })} style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', minWidth: '180px' }}>
+                    {clubInfo.hostId?.profilePic ? (
+                      <img src={`http://localhost:5000${clubInfo.hostId.profilePic}`} alt="President" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--primary-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                        {(clubInfo.hostId?.name || 'Y')[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{clubInfo.hostId?.name || 'You'}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>President</div>
+                    </div>
                   </div>
                 </div>
                 {getMembersByLevel().map((levelMembers, idx) => (
-                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ width: '2px', height: '32px', background: 'var(--border)' }}></div>
-                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                      {levelMembers.map(member => (
-                        <div key={member._id} className="hierarchy-tree__content" style={{ position: 'relative' }} onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
-                          <div 
-                             style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#000', color: '#fff', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid var(--border)', zIndex: 10 }}
-                             onClick={(e) => handleRemoveMember(member._id, e)}
-                             title="Remove Member"
-                          >
-                             <X size={12} strokeWidth={3} />
+                  <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                    <div style={{ width: '2px', height: '24px', background: 'var(--border)' }}></div>
+                    
+                    <div style={{ display: 'flex', position: 'relative', paddingTop: levelMembers.length > 1 ? '16px' : '0', justifyContent: 'center', width: '100%' }}>
+                      {levelMembers.length > 1 && (
+                        <div style={{ position: 'absolute', top: 0, left: '50%', width: `calc(100% - ${100 / levelMembers.length}%)`, transform: 'translateX(-50%)', height: '2px', background: 'var(--border)' }}></div>
+                      )}
+                      
+                      {levelMembers.map((member, mIdx) => (
+                        <div key={member._id} style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0 8px', minWidth: '160px', maxWidth: '240px' }}>
+                          {levelMembers.length > 1 && (
+                            <div style={{ position: 'absolute', top: 0, width: '2px', height: '16px', background: 'var(--border)' }}></div>
+                          )}
+                          <div className="hierarchy-tree__content" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', width: '100%' }} onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
+                            <div 
+                               style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#000', color: '#fff', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-primary)', zIndex: 10 }}
+                               onClick={(e) => handleRemoveMember(member._id, e)}
+                               title="Remove Member"
+                            >
+                               <X size={12} strokeWidth={3} />
+                            </div>
+                            {member.photoUrl ? (
+                              <img src={`http://localhost:5000${member.photoUrl}`} alt={member.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                            ) : (
+                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>
+                                {member.name[0].toUpperCase()}
+                              </div>
+                            )}
+                            <div style={{ overflow: 'hidden' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.role}</div>
+                            </div>
                           </div>
-                          {member.name} <br/> <span style={{fontSize: '10px', color: 'var(--text-secondary)'}}>{member.role}</span>
                         </div>
                       ))}
                     </div>

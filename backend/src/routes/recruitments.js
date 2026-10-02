@@ -16,6 +16,7 @@ const recruitmentSchema = z.object({
   deadline: z.string().datetime().optional().or(z.date().optional()),
   requirements: z.array(z.string()).optional(),
   questions: z.array(z.string()).optional(),
+  formId: z.string().optional(),
 });
 
 const updateRecruitmentSchema = recruitmentSchema.omit({ clubId: true }).partial();

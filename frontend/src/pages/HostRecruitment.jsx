@@ -64,6 +64,11 @@ function HostRecruitment() {
       return;
     }
 
+    if (attachForm && formFields.length === 0) {
+      addToast('Please add at least one field to the application form, or disable it.', 'error');
+      return;
+    }
+
     const formData = new FormData(e.target);
     const payload = Object.fromEntries(formData);
     payload.clubId = club._id;

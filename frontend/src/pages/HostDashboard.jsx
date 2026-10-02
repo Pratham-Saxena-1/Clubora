@@ -55,9 +55,16 @@ function HostDashboard() {
       formData.set('fee', 0);
     }
     
-    const dateVal = formData.get('date');
-    const timeVal = formData.get('time');
-    const dateTime = new Date(dateVal + ' ' + timeVal).toISOString() || new Date().toISOString();
+    let dateTime = new Date().toISOString();
+    try {
+      const dateVal = formData.get('date');
+      const timeVal = formData.get('time');
+      if (dateVal && timeVal) {
+        dateTime = new Date(`${dateVal}T${timeVal}`).toISOString();
+      }
+    } catch (e) {
+      console.warn("Date parsing failed", e);
+    }
     formData.set('dateTime', dateTime);
     
     try {

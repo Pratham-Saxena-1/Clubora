@@ -1,6 +1,8 @@
 const Event = require('../models/Event');
 const EventRegistration = require('../models/EventRegistration');
 const Club = require('../models/Club');
+const path = require('path');
+const fs = require('fs');
 
 exports.getEvents = async (req, res, next) => {
   try {
@@ -117,15 +119,42 @@ exports.uploadQrTicket = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({ error: { message: 'Please upload an image', code: 'BAD_REQUEST' } });
     }
-    const filePath = `/uploads/event-qr/${req.file.filename}`;
-    const registration = await EventRegistration.findByIdAndUpdate(
-      req.params.id,
-      { qrTicket: filePath },
-      { new: true }
-    );
+    
+    const registration = await EventRegistration.findById(req.params.id);
     if (!registration) {
       return res.status(404).json({ error: { message: 'Registration not found', code: 'NOT_FOUND' } });
     }
+
+    if (registration.qrTicket) {
+      const oldPath = path.join(__dirname, '..', '..', registration.qrTicket);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    const filePath = `/uploads/event-qr/${req.file.filename}`;
+    registration.qrTicket = filePath;
+    await registration.save();
+    
+    res.json(registration);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteQrTicket = async (req, res, next) => {
+  try {
+    const registration = await EventRegistration.findById(req.params.id);
+    if (!registration) {
+      return res.status(404).json({ error: { message: 'Registration not found', code: 'NOT_FOUND' } });
+    }
+
+    if (registration.qrTicket) {
+      const oldPath = path.join(__dirname, '..', '..', registration.qrTicket);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    registration.qrTicket = null;
+    await registration.save();
+    
     res.json(registration);
   } catch (error) {
     next(error);
@@ -137,15 +166,42 @@ exports.uploadCertificate = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({ error: { message: 'Please upload a certificate', code: 'BAD_REQUEST' } });
     }
-    const filePath = `/uploads/${req.file.filename}`;
-    const registration = await EventRegistration.findByIdAndUpdate(
-      req.params.id,
-      { certificate: filePath },
-      { new: true }
-    );
+
+    const registration = await EventRegistration.findById(req.params.id);
     if (!registration) {
       return res.status(404).json({ error: { message: 'Registration not found', code: 'NOT_FOUND' } });
     }
+
+    if (registration.certificate) {
+      const oldPath = path.join(__dirname, '..', '..', registration.certificate);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    const filePath = `/uploads/${req.file.filename}`;
+    registration.certificate = filePath;
+    await registration.save();
+    
+    res.json(registration);
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.deleteCertificate = async (req, res, next) => {
+  try {
+    const registration = await EventRegistration.findById(req.params.id);
+    if (!registration) {
+      return res.status(404).json({ error: { message: 'Registration not found', code: 'NOT_FOUND' } });
+    }
+
+    if (registration.certificate) {
+      const oldPath = path.join(__dirname, '..', '..', registration.certificate);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
+    registration.certificate = null;
+    await registration.save();
+    
     res.json(registration);
   } catch (error) {
     next(error);

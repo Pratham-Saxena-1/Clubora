@@ -82,7 +82,11 @@ function StudentDiscover() {
       formData.append('formId', selectedEvent.formId?._id || selectedEvent.formId);
       formData.append('answers', JSON.stringify(formattedAnswers));
       
-      await api.post(`/forms/${selectedEvent.formId?._id || selectedEvent.formId}/submit`, formData);
+      if (selectedEvent.formId) {
+        await api.post(`/forms/${selectedEvent.formId._id || selectedEvent.formId}/submit`, formData);
+      } else {
+        await api.post(`/events/${selectedEvent._id}/register`, formData);
+      }
       
       setRegisteredEvents(prev => ({ ...prev, [selectedEvent._id]: true }));
       addToast('Successfully registered for the event!', 'success');
@@ -193,9 +197,9 @@ function StudentDiscover() {
       {/* Detail/Registration Modal */}
       {selectedEvent && (
         <div className="host-modal__overlay" style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', background: 'rgba(5, 5, 5, 0.6)' }} onClick={() => { setSelectedEvent(null); setIsRegistering(false); }}>
-          <div className="host-modal" style={{ maxWidth: '560px', padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div className="host-modal" style={{ maxWidth: '560px', padding: 0, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             {/* Modal Header Gradient */}
-            <div style={{ height: '140px', background: 'linear-gradient(135deg, rgba(179, 141, 69, 0.4) 0%, rgba(5, 5, 5, 0.8) 100%)', position: 'relative', padding: '24px', display: 'flex', alignItems: 'flex-end' }}>
+            <div style={{ height: '140px', flexShrink: 0, background: 'linear-gradient(135deg, rgba(179, 141, 69, 0.4) 0%, rgba(5, 5, 5, 0.8) 100%)', position: 'relative', padding: '24px', display: 'flex', alignItems: 'flex-end' }}>
               <button onClick={() => { setSelectedEvent(null); setIsRegistering(false); }} style={{ position: 'absolute', top: '16px', right: '16px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={18} />
               </button>
@@ -212,7 +216,7 @@ function StudentDiscover() {
               </div>
             </div>
 
-            <div style={{ padding: '24px' }}>
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
               {!isRegistering ? (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
@@ -257,7 +261,7 @@ function StudentDiscover() {
                   {selectedEvent.isPaid && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
                       <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                        <h4 style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-primary)' }}>Payment Required: ${selectedEvent.fee}</h4>
+                        <h4 style={{ fontSize: '14px', marginBottom: '8px', color: 'var(--text-primary)' }}>Payment Required: ₹{selectedEvent.fee}</h4>
                         <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Please complete the payment and upload a screenshot of the transaction as proof.</p>
                         <div className="host-modal__field" style={{ marginBottom: 0 }}>
                           <label className="host-modal__label">Payment Proof (Screenshot)</label>
