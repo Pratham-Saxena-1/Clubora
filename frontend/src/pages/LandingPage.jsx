@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, BarChart3, Shield, ArrowRight } from 'lucide-react';
+import { useRef } from 'react';
 
 const features = [
   {
@@ -26,10 +27,19 @@ const features = [
 
 function LandingPage() {
   const navigate = useNavigate();
+  const landingRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    if (!landingRef.current) return;
+    // We use clientX/Y so it tracks properly relative to the viewport (fixed position grid)
+    landingRef.current.style.setProperty('--mouse-x', `${e.clientX}px`);
+    landingRef.current.style.setProperty('--mouse-y', `${e.clientY}px`);
+  };
 
   return (
-    <div className="landing">
+    <div className="landing" ref={landingRef} onMouseMove={handleMouseMove}>
       <div className="landing__bg-grid" />
+      <div className="landing__bg-grid-highlight" />
       <div className="landing__bg-glow landing__bg-glow--1" />
       <div className="landing__bg-glow landing__bg-glow--2" />
 
