@@ -256,8 +256,12 @@ function HostSupport() {
           </div>
           {activeTicket ? (
             <div style={{ padding: 'var(--space-xl) var(--space-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-full)', background: 'linear-gradient(135deg, var(--accent), var(--secondary))', color: '#fff', fontSize: 'var(--font-2xl)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-md)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' }}>
-                {activeTicket.userId?.name ? activeTicket.userId.name.substring(0, 2).toUpperCase() : 'ST'}
+              <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-full)', background: 'linear-gradient(135deg, var(--accent), var(--secondary))', color: '#fff', fontSize: 'var(--font-2xl)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-md)', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+                {activeTicket.userId?.profilePic ? (
+                  <img src={`http://localhost:5000${activeTicket.userId.profilePic}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  activeTicket.userId?.name ? activeTicket.userId.name.substring(0, 2).toUpperCase() : 'ST'
+                )}
               </div>
               <h4 style={{ fontSize: 'var(--font-lg)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', textAlign: 'center' }}>{activeTicket.userId?.name || 'Unknown'}</h4>
               <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)', textAlign: 'center' }}>{activeTicket.userId?.regNumber || 'N/A'}</p>
@@ -267,6 +271,18 @@ function HostSupport() {
                   <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '4px' }}>Email Address</span>
                   <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)' }}>{activeTicket.userId?.email || 'N/A'}</span>
                 </div>
+                {activeTicket.userId?.contactNumber && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '4px' }}>Contact Number</span>
+                    <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)' }}>{activeTicket.userId.contactNumber}</span>
+                  </div>
+                )}
+                {activeTicket.type === 'Feedback' && activeTicket.eventId && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '4px' }}>Related Event</span>
+                    <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)', fontWeight: 500 }}>{activeTicket.eventId.title || 'Unknown Event'}</span>
+                  </div>
+                )}
                 <div>
                   <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: 600, marginBottom: '4px' }}>Ticket Created</span>
                   <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-primary)' }}>{new Date(activeTicket.createdAt).toLocaleDateString()}</span>

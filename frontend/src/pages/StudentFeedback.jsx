@@ -65,7 +65,8 @@ function StudentFeedback() {
         type: 'Feedback',
         subject: `Feedback for ${event.title}`,
         description: description,
-        eventId: event._id
+        eventId: event._id,
+        clubId: event.clubId?._id || event.clubId
       });
 
       setFeedbacks(prev => ({

@@ -47,7 +47,8 @@ exports.getAllTickets = async (req, res, next) => {
     }
 
     const tickets = await Ticket.find({ clubId: club._id })
-      .populate('userId', 'name email regNumber')
+      .populate('userId', 'name email regNumber profilePic contactNumber')
+      .populate('eventId', 'title')
       .sort({ createdAt: -1 });
       
     res.json(tickets);
