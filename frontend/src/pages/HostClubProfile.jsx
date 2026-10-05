@@ -449,18 +449,18 @@ function HostClubProfile() {
               <h2 className="host-club-profile__card-title">Connect Contacts</h2>
             </div>
             <div className="host-club-profile__contacts" style={{ display: 'flex', gap: '16px' }}>
-              <a href={`mailto:contact@${clubInfo.name.replace(/\s+/g, '').toLowerCase()}.edu`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <a href={`mailto:${clubInfo.hostId?.settings?.presidentEmail || clubInfo.hostId?.email || 'contact@' + clubInfo.name.replace(/\s+/g, '').toLowerCase() + '.edu'}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <Mail size={18} strokeWidth={1.8} />
                 <span>Email</span>
               </a>
-              {clubInfo.contactNumber && (
-                <a href={`tel:${clubInfo.contactNumber}`} className="host-club-profile__contact-tile" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              {(clubInfo.hostId?.contactNumber || clubInfo.contactNumber) && (
+                <a href={`tel:${clubInfo.hostId?.contactNumber || clubInfo.contactNumber}`} className="host-club-profile__contact-tile" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <Phone size={18} strokeWidth={1.8} />
                   <span>Phone</span>
                 </a>
               )}
-              {clubInfo.instagram && (
-                <a href={`https://instagram.com/${clubInfo.instagram.replace('@', '')}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              {(clubInfo.hostId?.settings?.instagramUrl || clubInfo.instagram) && (
+                <a href={clubInfo.hostId?.settings?.instagramUrl?.startsWith('http') ? clubInfo.hostId?.settings?.instagramUrl : `https://instagram.com/${(clubInfo.hostId?.settings?.instagramUrl || clubInfo.instagram)?.replace('@', '')}`} className="host-club-profile__contact-tile" target="_blank" rel="noopener noreferrer" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                   <svg className="host-club-profile__contact-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>

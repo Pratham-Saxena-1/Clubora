@@ -93,7 +93,7 @@ function DynamicFormFiller({ form, answers, setAnswers }) {
             )}
 
             {field.type === 'file_upload' && (
-              <input type="file" className="host-modal__input" onChange={e => handleFileChange(field.id, e.target.files[0])} required={field.required} />
+              <input type="file" className="host-modal__input" accept=".pdf, image/*" onChange={e => handleFileChange(field.id, e.target.files[0])} required={field.required} />
             )}
           </div>
         );

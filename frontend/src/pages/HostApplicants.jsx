@@ -108,7 +108,7 @@ function HostApplicants() {
     addToast('Excel file downloaded', 'success');
   };
 
-  const columns = ['Applicant', 'Applied Role', 'Submission Date', 'Status', 'Actions', 'Hiring Status'];
+  const columns = ['Applicant', 'Applied Role', 'Submission Date', 'Status', 'Actions', 'Interview Details', 'Hiring Status'];
 
   const renderRow = (applicant) => {
     const student = applicant.studentId || {};
@@ -128,12 +128,6 @@ function HostApplicants() {
         </td>
         <td>
           <span className="host-applicants__role-badge">{roleTitle}</span>
-          {applicant.interview && (
-            <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-secondary)' }}>
-              <strong>Interview:</strong> {new Date(applicant.interview.date).toLocaleDateString()} at {applicant.interview.time} <br/>
-              <strong>Location:</strong> {applicant.interview.link}
-            </div>
-          )}
         </td>
         <td className="host-applicants__date">{subDate}</td>
         <td>
@@ -155,22 +149,6 @@ function HostApplicants() {
         </td>
         <td>
           <div className="host-applicants__actions">
-              <button 
-                className="host-data-table__action-btn" 
-                onClick={() => setInterviewModal(applicant)}
-                disabled={!!applicant.interview}
-                style={{ 
-                  padding: '6px 12px', 
-                  background: applicant.interview ? 'var(--bg-secondary)' : 'var(--primary-soft)', 
-                  color: applicant.interview ? 'var(--text-tertiary)' : 'var(--primary)', 
-                  border: 'none', 
-                  borderRadius: 'var(--radius-sm)',
-                  cursor: applicant.interview ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {applicant.interview ? 'Interview Scheduled' : 'Schedule Interview'}
-              </button>
-            
             {(applicant.formResponseId?.answers && applicant.formResponseId.answers.length > 0) && (
               <button 
                 className="host-data-table__action-btn" 
@@ -208,30 +186,70 @@ function HostApplicants() {
           </div>
         </td>
         <td>
-          {applicant.status === 'Interviewed' ? (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button 
-                className="host-data-table__action-btn host-data-table__action-btn--success" 
-                aria-label="Hired"
-                onClick={() => handleStatusChange(applicant._id, 'Hired', student.name)}
+          {applicant.interview ? (
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              <strong>Date:</strong> {new Date(applicant.interview.date).toLocaleDateString()}<br/>
+              <strong>Time:</strong> {applicant.interview.time}<br/>
+              <strong>Link/Loc:</strong> {applicant.interview.link}<br/>
+              {/* Update Details button removed as requested */}
+            </div>
+          ) : (
+            <button 
+              className="host-data-table__action-btn" 
+              onClick={() => setInterviewModal(applicant)}
+              style={{ padding: '6px 12px', background: 'var(--primary-soft)', color: 'var(--primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '12px' }}
+            >
+              Schedule Interview
+            </button>
+          )}
+        </td>
+        <td>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {applicant.status !== 'Not Hired' && (
+              <button
+                onClick={() => handleStatusChange(applicant._id, applicant.status === 'Hired' ? 'Shortlisted' : 'Hired', student.name)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '16px',
+                  border: '1px solid',
+                  borderColor: applicant.status === 'Hired' ? 'rgba(52, 211, 153, 0.4)' : 'var(--border)',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  whiteSpace: 'nowrap',
+                  width: 'fit-content',
+                  background: applicant.status === 'Hired' ? 'rgba(16, 185, 129, 0.15)' : 'var(--bg-tertiary)',
+                  color: applicant.status === 'Hired' ? '#34d399' : 'var(--text-primary)',
+                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: applicant.status === 'Hired' ? '0 0 10px rgba(16, 185, 129, 0.1)' : 'none'
+                }}
               >
                 Hired
               </button>
-              <button 
-                className="host-data-table__action-btn host-data-table__action-btn--danger" 
-                aria-label="Not Hired"
-                onClick={() => handleStatusChange(applicant._id, 'Not Hired', student.name)}
+            )}
+            {applicant.status !== 'Hired' && (
+              <button
+                onClick={() => handleStatusChange(applicant._id, applicant.status === 'Not Hired' ? 'Shortlisted' : 'Not Hired', student.name)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '16px',
+                  border: '1px solid',
+                  borderColor: applicant.status === 'Not Hired' ? 'rgba(248, 113, 113, 0.4)' : 'var(--border)',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  whiteSpace: 'nowrap',
+                  width: 'fit-content',
+                  background: applicant.status === 'Not Hired' ? 'rgba(239, 68, 68, 0.15)' : 'var(--bg-tertiary)',
+                  color: applicant.status === 'Not Hired' ? '#f87171' : 'var(--text-primary)',
+                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: applicant.status === 'Not Hired' ? '0 0 10px rgba(239, 68, 68, 0.1)' : 'none'
+                }}
               >
                 Not Hired
               </button>
-            </div>
-          ) : ['Hired', 'Not Hired'].includes(applicant.status) ? (
-            <span className={`host-applicants__status-label host-applicants__status-label--${applicant.status.toLowerCase().replace(/\s+/g, '-')}`}>
-              {applicant.status}
-            </span>
-          ) : (
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-xs)' }}>-</span>
-          )}
+            )}
+          </div>
         </td>
       </tr>
     );
@@ -318,7 +336,18 @@ function HostApplicants() {
                   <div key={idx} style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
                     <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>{fieldDef ? fieldDef.label : `Field ID: ${ans.fieldId}`}</span>
                     <span style={{ display: 'block', fontSize: '14px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '4px' }}>
-                      {Array.isArray(ans.value) ? ans.value.join(', ') : (typeof ans.value === 'object' ? JSON.stringify(ans.value) : String(ans.value))}
+                      {Array.isArray(ans.value) ? ans.value.join(', ') : (
+                        typeof ans.value === 'string' && ans.value.startsWith('/uploads/') ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                            <a href={`http://localhost:5000${ans.value}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
+                              View Resume
+                            </a>
+                            {/* Resume embedded preview removed as requested */}
+                          </div>
+                        ) : (
+                          typeof ans.value === 'object' ? JSON.stringify(ans.value) : String(ans.value)
+                        )
+                      )}
                     </span>
                   </div>
                 );

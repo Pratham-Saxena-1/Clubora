@@ -20,6 +20,7 @@ function HostRegistrations() {
   const [eventFilter, setEventFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [modalData, setModalData] = useState(null);
+  const [viewedScreenshots, setViewedScreenshots] = useState(new Set());
   
   useEffect(() => {
     fetchRegistrations();
@@ -128,13 +129,57 @@ function HostRegistrations() {
           )}
         </td>
         <td>
-          <button 
-            className="host-data-table__action-btn" 
-            aria-label="View Details" 
-            onClick={() => setModalData(reg)}
-          >
-            <FileText size={14} strokeWidth={2} />
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button 
+              className="host-data-table__action-btn" 
+              aria-label="View Details" 
+              title="View Details"
+              onClick={() => setModalData(reg)}
+            >
+              <FileText size={14} strokeWidth={2} />
+            </button>
+            
+            {(() => {
+              let screenshotUrl = reg.paymentScreenshot;
+              if (!screenshotUrl && reg.formResponseId?.answers) {
+                const uploadAns = reg.formResponseId.answers.find(a => typeof a.value === 'string' && a.value.startsWith('/uploads/'));
+                if (uploadAns) screenshotUrl = uploadAns.value;
+              }
+              
+              return screenshotUrl ? (
+                <>
+                  <a 
+                    href={`http://localhost:5000${screenshotUrl}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="host-data-table__action-btn"
+                    title="View Screenshot"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                    onClick={() => {
+                      setViewedScreenshots(prev => {
+                        const newSet = new Set(prev);
+                        newSet.add(reg._id);
+                        return newSet;
+                      });
+                    }}
+                  >
+                    <img src={`http://localhost:5000${screenshotUrl}`} alt="Payment" style={{ width: '16px', height: '16px', objectFit: 'cover', borderRadius: '2px' }} />
+                  </a>
+                  {(!reg.paymentVerified || reg.paymentVerified === false) && viewedScreenshots.has(reg._id) && (
+                    <button 
+                      className="host-data-table__action-btn" 
+                      aria-label="Verify Payment" 
+                      title="Verify Payment"
+                      style={{ color: '#10b981' }}
+                      onClick={() => handleVerifyPayment(reg._id)}
+                    >
+                      <CheckCircle size={14} strokeWidth={2} />
+                    </button>
+                  )}
+                </>
+              ) : null;
+            })()}
+          </div>
         </td>
         </tr>
     );
@@ -217,7 +262,9 @@ function HostRegistrations() {
               <div style={{ marginTop: '16px' }}>
                 <h4 style={{ marginBottom: '12px', fontSize: '14px', color: 'var(--text-primary)' }}>Registration Form Responses</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {modalData.formResponseId.answers.map((ans, idx) => {
+                  {modalData.formResponseId.answers
+                    .filter(ans => !(typeof ans.value === 'string' && ans.value.startsWith('/uploads/')))
+                    .map((ans, idx) => {
                     const fieldDef = modalData.formResponseId.formId?.fields?.find(f => f.id === ans.fieldId);
                     return (
                       <div key={idx} style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)' }}>

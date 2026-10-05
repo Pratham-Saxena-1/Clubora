@@ -90,6 +90,15 @@ exports.submitFormResponse = async (req, res, next) => {
         try { parsedAnswers = JSON.parse(answers); } catch(e) {}
     }
 
+    if (req.file) {
+      const fileAns = parsedAnswers.find(a => a.value === req.file.originalname);
+      if (fileAns) {
+        fileAns.value = `/uploads/${req.file.filename}`;
+      } else {
+        parsedAnswers.push({ fieldId: 'uploaded_file', value: `/uploads/${req.file.filename}` });
+      }
+    }
+
     const formResponse = await FormResponse.create({
       formId,
       studentId: req.user.id,

@@ -32,6 +32,13 @@ const fileFilter = (req, file, cb) => {
     } else {
       cb(new Error('Only PDF or images allowed for certificates'), false);
     }
+  } else if (file.fieldname === 'file') {
+    // Generic file uploads from dynamic forms (can be resume, portfolio, etc.)
+    if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF and images allowed for form files'), false);
+    }
   } else {
     // Images
     if (file.mimetype.startsWith('image/')) {

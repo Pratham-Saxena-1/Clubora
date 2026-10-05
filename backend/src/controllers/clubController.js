@@ -13,7 +13,7 @@ exports.getClubs = async (req, res, next) => {
         ]
       };
     }
-    const clubs = await Club.find(query).populate('hostId', 'name profilePic');
+    const clubs = await Club.find(query).populate('hostId', 'name profilePic email contactNumber settings');
     
     const Event = require('../models/Event');
     const enrichedClubs = await Promise.all(clubs.map(async (club) => {
@@ -32,7 +32,7 @@ exports.getClubs = async (req, res, next) => {
 
 exports.getClub = async (req, res, next) => {
   try {
-    const club = await Club.findById(req.params.id).populate('hostId', 'name profilePic');
+    const club = await Club.findById(req.params.id).populate('hostId', 'name profilePic email contactNumber settings');
     if (!club) {
       return res.status(404).json({ error: { message: 'Club not found', code: 'NOT_FOUND' } });
     }
@@ -45,7 +45,7 @@ exports.getClub = async (req, res, next) => {
 
 exports.getMyClub = async (req, res, next) => {
   try {
-    const club = await Club.findOne({ hostId: req.user.id }).populate('hostId', 'name profilePic');
+    const club = await Club.findOne({ hostId: req.user.id }).populate('hostId', 'name profilePic email contactNumber settings');
     if (!club) {
       return res.status(404).json({ error: { message: 'Club not found', code: 'NOT_FOUND' } });
     }

@@ -112,3 +112,29 @@ exports.deleteAccount = async (req, res, next) => {
     next(error);
   }
 };
+
+exports.changePassword = async (req, res, next) => {
+  try {
+    const { email, newPassword } = req.body;
+    
+    if (!email || !newPassword) {
+      return res.status(400).json({ error: { message: 'Email and new password are required' } });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user || user.email !== email) {
+      return res.status(401).json({ error: { message: 'Incorrect email provided' } });
+    }
+
+    const bcrypt = require('bcrypt');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
