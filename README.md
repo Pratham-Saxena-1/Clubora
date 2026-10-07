@@ -22,8 +22,10 @@ The application follows a standard client-server architecture:
 
 ```mermaid
 graph LR
-    A[React Frontend (Vite)] <-->|REST API / JSON| B(Express Backend)
-    B <-->|Mongoose| C[(MongoDB)]
+    A[React Frontend] -->|REST API / JSON| B(Express Backend)
+    B -->|Responses| A
+    B -->|Mongoose| C[(MongoDB)]
+    C -->|Data| B
 ```
 
 ## 💻 Tech Stack
@@ -127,4 +129,4 @@ Clubora/
 5. Open a Pull Request
 
 ## 📄 License
-This project is licensed under the ISC License.
+This project is licensed under the MIT License.
