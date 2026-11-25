@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { AuthProvider } from './context/AuthContext';
+import { SidebarProvider } from './context/SidebarContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import HostLayout from './layouts/HostLayout';
@@ -33,8 +34,9 @@ function App() {
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
-          <HashRouter>
-            <Routes>
+          <SidebarProvider>
+            <HashRouter>
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
@@ -74,6 +76,7 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </HashRouter>
+          </SidebarProvider>
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
