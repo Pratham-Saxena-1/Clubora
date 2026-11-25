@@ -86,9 +86,9 @@ function StudentClubs() {
               <div className="hierarchy-tree">
                 <div className="hierarchy-levels" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', overflowX: 'auto', paddingBottom: '16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                    <div className="hierarchy-tree__content" onClick={() => setMemberDetails({ _id: selectedClub.hostId?._id, name: selectedClub.hostId?.name || 'President', role: 'President', isHost: true, photo: selectedClub.hostId?.profilePic ? `http://localhost:5000${selectedClub.hostId.profilePic}` : null })} style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', minWidth: '180px', cursor: 'pointer' }}>
+                    <div className="hierarchy-tree__content" onClick={() => setMemberDetails({ _id: selectedClub.hostId?._id, name: selectedClub.hostId?.name || 'President', role: 'President', isHost: true, photo: selectedClub.hostId?.profilePic ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${selectedClub.hostId.profilePic}` : null })} style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', minWidth: '180px', cursor: 'pointer' }}>
                       {selectedClub.hostId?.profilePic ? (
-                        <img src={`http://localhost:5000${selectedClub.hostId.profilePic}`} alt="President" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                        <img src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${selectedClub.hostId.profilePic}`} alt="President" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', color: 'var(--primary-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                           {(selectedClub.hostId?.name || 'P')[0].toUpperCase()}
@@ -114,9 +114,9 @@ function StudentClubs() {
                             {levelMembers.length > 1 && (
                               <div style={{ position: 'absolute', top: 0, width: '2px', height: '16px', background: 'var(--border)' }}></div>
                             )}
-                            <div className="hierarchy-tree__content" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', width: '100%', cursor: 'pointer' }} onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `http://localhost:5000${member.photoUrl}` : null })}>
+                            <div className="hierarchy-tree__content" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', width: '100%', cursor: 'pointer' }} onClick={() => setMemberDetails({ ...member, photo: member.photoUrl ? `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${member.photoUrl}` : null })}>
                               {member.photoUrl ? (
-                                <img src={`http://localhost:5000${member.photoUrl}`} alt={member.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                                <img src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${member.photoUrl}`} alt={member.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
                               ) : (
                                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>
                                   {member.name[0].toUpperCase()}
@@ -149,7 +149,7 @@ function StudentClubs() {
                     >
                       {(evt.thumbnailUrl || (evt.images && evt.images.length > 0)) ? (
                         <>
-                          <img src={`http://localhost:5000${evt.thumbnailUrl || evt.images[0]}`} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${evt.thumbnailUrl || evt.images[0]}`} alt={evt.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'var(--space-sm)' }}>
                             <span style={{ fontSize: 'var(--font-xs)', fontWeight: 600, color: '#fff' }}>{evt.title}</span>
                             <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)' }}>{evt.images ? evt.images.length : 0} Photos</span>
@@ -227,7 +227,7 @@ function StudentClubs() {
               {expandedPhotoIndex !== null ? (
                 <div className="arc-gallery-expanded" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 20px', position: 'relative', height: '100%' }}>
                   <div style={{ position: 'relative', display: 'inline-block' }}>
-                    <img src={`http://localhost:5000${galleryEvent.images[expandedPhotoIndex]}`} alt="Expanded view" className="arc-gallery-expanded-img" style={{ maxHeight: '80vh', maxWidth: '100%', display: 'block', objectFit: 'contain' }} />
+                    <img src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${galleryEvent.images[expandedPhotoIndex]}`} alt="Expanded view" className="arc-gallery-expanded-img" style={{ maxHeight: '80vh', maxWidth: '100%', display: 'block', objectFit: 'contain' }} />
                     
                     {/* Left Arrow */}
                     <button className="arc-gallery-nav-btn" onClick={(e) => { e.stopPropagation(); setExpandedPhotoIndex(prev => prev > 0 ? prev - 1 : galleryEvent.images.length - 1); }} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.8)', border: 'none', color: '#000', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', cursor: 'pointer', zIndex: 20 }}>
@@ -259,7 +259,7 @@ function StudentClubs() {
                         return (
                           <img 
                             key={idx} 
-                            src={`http://localhost:5000${img}`} 
+                            src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${img}`} 
                             alt={`Event photo ${idx+1}`} 
                             className="arc-gallery__item"
                             style={{

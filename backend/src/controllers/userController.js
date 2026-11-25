@@ -115,10 +115,10 @@ exports.deleteAccount = async (req, res, next) => {
 
 exports.changePassword = async (req, res, next) => {
   try {
-    const { email, newPassword } = req.body;
+    const { email, currentPassword, newPassword } = req.body;
     
-    if (!email || !newPassword) {
-      return res.status(400).json({ error: { message: 'Email and new password are required' } });
+    if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({ error: { message: 'Email, current password, and new password are required' } });
     }
 
     const user = await User.findById(req.user.id);
@@ -127,6 +127,11 @@ exports.changePassword = async (req, res, next) => {
     }
 
     const bcrypt = require('bcrypt');
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: { message: 'Current password is incorrect' } });
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
 

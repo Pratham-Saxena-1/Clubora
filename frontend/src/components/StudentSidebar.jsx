@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import {
   LayoutDashboard,
   Compass,
@@ -20,10 +21,10 @@ const navItems = [
 ];
 
 function StudentSidebar() {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    navigate('/');
+    logout();
   };
 
   return (
