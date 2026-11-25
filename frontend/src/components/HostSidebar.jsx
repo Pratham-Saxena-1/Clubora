@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CreditCard,
   Ticket,
+  QrCode,
   HeadphonesIcon,
   Settings,
   LogOut,
@@ -19,6 +20,7 @@ const navItems = [
   { to: '/host/applicants', icon: ClipboardList, label: 'Applicants' },
   { to: '/host/registrations', icon: CreditCard, label: 'Registrations' },
   { to: '/host/tickets-certs', icon: Ticket, label: 'Tickets & Certs' },
+  { to: '/host/scanner', icon: QrCode, label: 'QR Scanner' },
   { to: '/host/support', icon: HeadphonesIcon, label: 'Support' },
 ];
 

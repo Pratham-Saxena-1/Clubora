@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { CalendarCheck, UserCheck, Send, QrCode, Loader2, Award, Download, ArrowRight, Telescope, Sparkles, Building2 } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
@@ -11,17 +11,20 @@ function StudentDashboard() {
 
   const [registrations, setRegistrations] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [regsRes, appsRes] = await Promise.all([
+        const [regsRes, appsRes, certsRes] = await Promise.all([
           api.get('/events/registrations/student/me'),
-          api.get(`/applications/student/${user.id}`)
+          api.get(`/applications/student/${user.id}`),
+          api.get('/certificates/student/me').catch(() => ({ data: [] }))
         ]);
         setRegistrations(regsRes.data);
         setApplications(appsRes.data);
+        setCertificates(certsRes.data || []);
       } catch (err) {
         console.error('Failed to load dashboard data');
       } finally {
@@ -38,10 +41,50 @@ function StudentDashboard() {
     navigate('/student/discover');
   };
 
-  const attendedEventsCount = registrations.filter(r => r.paymentVerified).length;
+  const attendedEventsCount = registrations.filter(r => r.attended).length;
   const pendingAppsCount = applications.filter(a => a.status === 'Pending').length;
-  const certificatesCount = registrations.filter(r => r.certificate).length;
-  
+
+  const earnedCertificates = useMemo(() => {
+    const list = [];
+    const seenCerts = new Set();
+
+    // From registrations
+    for (const reg of registrations) {
+      if (reg.certificate) {
+        const key = reg.eventId?._id ? reg.eventId._id.toString() : reg._id;
+        seenCerts.add(key);
+        list.push({
+          _id: reg._id,
+          eventId: reg.eventId?._id,
+          title: reg.eventId?.title || 'Unknown Event',
+          clubName: reg.eventId?.clubId?.name || 'Campus Club',
+          date: reg.updatedAt || new Date(),
+          certificate: reg.certificate,
+          certDocId: null
+        });
+      }
+    }
+
+    // From Certificate collection (if any not already in list)
+    for (const cert of certificates) {
+      const key = cert.eventId?._id ? cert.eventId._id.toString() : (cert.eventId ? cert.eventId.toString() : cert._id);
+      if (seenCerts.has(key)) continue;
+      list.push({
+        _id: cert._id,
+        eventId: cert.eventId?._id || cert.eventId,
+        title: cert.title || cert.eventId?.title || 'Certificate of Participation',
+        clubName: cert.clubId?.name || 'Campus Club',
+        date: cert.issueDate || cert.createdAt || new Date(),
+        certificate: cert.fileUrl,
+        certDocId: cert._id
+      });
+    }
+
+    return list;
+  }, [registrations, certificates]);
+
+  const certificatesCount = earnedCertificates.length;
+
   const upcomingEvents = registrations
     .filter(r => r.eventId && new Date(r.eventId.dateTime) >= new Date())
     .sort((a, b) => new Date(a.eventId.dateTime) - new Date(b.eventId.dateTime));
@@ -60,7 +103,7 @@ function StudentDashboard() {
 
   return (
     <div className="student-dashboard" style={{ position: 'relative', overflow: 'hidden' }}>
-      
+
       {/* Background Ambient Glows */}
       <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 60%)', zIndex: -1, pointerEvents: 'none', filter: 'blur(60px)' }}></div>
       <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.04) 0%, transparent 60%)', zIndex: -1, pointerEvents: 'none', filter: 'blur(60px)' }}></div>
@@ -77,7 +120,7 @@ function StudentDashboard() {
 
       {/* Stats Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-        
+
         {/* Stat 1 */}
         <div className="glass-card stat-card hover-lift" style={{ ...stagger(1) }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
@@ -135,10 +178,10 @@ function StudentDashboard() {
 
       {/* Main Grid: 2 Columns */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', marginBottom: '40px' }}>
-        
+
         {/* Left Column: Upcoming Events & Certificates */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          
+
           {/* Upcoming Events Section */}
           <section style={{ ...stagger(5) }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -147,7 +190,7 @@ function StudentDashboard() {
                 Browse More Events <ArrowRight size={14} />
               </button>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
               {upcomingEvents.length === 0 ? (
                 <div className="empty-state-card glass-card hover-lift" onClick={handleViewAllEvents} style={{ gridColumn: '1 / -1', cursor: 'pointer' }}>
@@ -163,7 +206,7 @@ function StudentDashboard() {
               ) : upcomingEvents.slice(0, 4).map((reg) => {
                 const event = reg.eventId;
                 if (!event) return null;
-                
+
                 return (
                   <div key={reg._id} className="event-glass-card hover-lift">
                     <div className="event-card-header">
@@ -183,7 +226,7 @@ function StudentDashboard() {
                       </div>
                     </div>
                     {reg.qrTicket ? (
-                      <a href={`http://localhost:5000${reg.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                      <a href={reg.qrTicket.startsWith('data:') ? reg.qrTicket : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${reg.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                         <button className="btn-ticket-active">
                           <QrCode size={16} /> View QR Ticket
                         </button>
@@ -200,27 +243,28 @@ function StudentDashboard() {
           </section>
 
           {/* Certificates Panel */}
-          {registrations.filter(r => r.certificate).length > 0 && (
+            {
+              earnedCertificates.length > 0 && (
             <section style={{ ...stagger(6) }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Earned Certificates</h2>
                 <span className="badge-glass badge-gold" style={{ fontSize: '10px' }}>{certificatesCount} Total</span>
               </div>
               <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }} className="hide-scrollbar">
-                {registrations.filter(r => r.certificate).map(reg => (
-                  <div key={reg._id} className="cert-glass-card hover-lift">
+                {earnedCertificates.map(cert => (
+                  <div key={cert._id} className="cert-glass-card hover-lift">
                     <div className="cert-bg-pattern"></div>
                     <div style={{ position: 'relative', zIndex: 1 }}>
                       <div className="cert-icon-wrapper">
                         <Award size={20} />
                       </div>
-                      <h4 className="cert-title">{reg.eventId?.title || 'Unknown Event'}</h4>
-                      <span className="cert-subtitle">{reg.eventId?.clubId?.name || 'Unknown Club'}</span>
+                      <h4 className="cert-title">{cert.title}</h4>
+                      <span className="cert-subtitle">{cert.clubName}</span>
                     </div>
                     <div className="cert-footer">
-                      <span className="cert-date">{new Date(reg.updatedAt).toLocaleDateString()}</span>
-                      {reg.certificate && (
-                        <a href={`http://localhost:5000${reg.certificate}`} target="_blank" rel="noopener noreferrer" className="cert-download-btn">
+                      <span className="cert-date">{new Date(cert.date).toLocaleDateString()}</span>
+                      {cert.certificate && (
+                        <a href={cert.certificate.startsWith('http') ? cert.certificate : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${cert.certificate}`} target="_blank" rel="noopener noreferrer" className="cert-download-btn" title="View / Download PDF">
                           <Download size={14} />
                         </a>
                       )}
@@ -619,7 +663,7 @@ function StudentDashboard() {
         .status-pending { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); }
       `}</style>
     </div>
-  );
+        );
 }
 
-export default StudentDashboard;
+        export default StudentDashboard;

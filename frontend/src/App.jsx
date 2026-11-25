@@ -14,8 +14,10 @@ import HostRecruitment from './pages/HostRecruitment';
 import HostApplicants from './pages/HostApplicants';
 import HostRegistrations from './pages/HostRegistrations';
 import HostTicketsCerts from './pages/HostTicketsCerts';
+import HostScanner from './pages/HostScanner';
 import HostSupport from './pages/HostSupport';
 import HostSettings from './pages/HostSettings';
+import VerifyCertificate from './pages/VerifyCertificate';
 
 import StudentLayout from './layouts/StudentLayout';
 import StudentDashboard from './pages/StudentDashboard';
@@ -37,6 +39,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/verify/certificate/:id" element={<VerifyCertificate />} />
               
               {/* Host Protected Routes */}
               <Route element={<ProtectedRoute allowedRoles={['Host']} />}>
@@ -48,6 +51,7 @@ function App() {
                   <Route path="applicants" element={<HostApplicants />} />
                   <Route path="registrations" element={<HostRegistrations />} />
                   <Route path="tickets-certs" element={<HostTicketsCerts />} />
+                  <Route path="scanner" element={<HostScanner />} />
                   <Route path="support" element={<HostSupport />} />
                   <Route path="settings" element={<HostSettings />} />
                 </Route>

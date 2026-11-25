@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Upload, CheckCircle2, RefreshCcw, Trash2 } from 'lucide-react';
+import { Upload, CheckCircle2, RefreshCcw, Trash2, Award, QrCode } from 'lucide-react';
 import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
@@ -13,6 +13,8 @@ function HostTicketsCerts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [bulkIssuing, setBulkIssuing] = useState(false);
+  const [issuingCertId, setIssuingCertId] = useState(null);
   const { addToast } = useToast();
   const pageSize = 10;
 
@@ -67,24 +69,6 @@ function HostTicketsCerts() {
     }
   };
 
-  const handleIssueCertificate = async (e, id, name) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append('certificate', file);
-
-    try {
-      const { data } = await api.post(`/events/registrations/${id}/certificate`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setRegistrations(prev => prev.map(t => t._id === id ? { ...t, certificate: data.certificate } : t));
-      addToast(`Certificate issued for ${name}`, 'success');
-    } catch (err) {
-      addToast(`Failed to issue Certificate for ${name}`, 'error');
-    }
-  };
-
   const handleDeleteQR = async (id, name) => {
     if (!window.confirm(`Are you sure you want to completely remove the QR pass for ${name}?`)) return;
     try {
@@ -106,6 +90,51 @@ function HostTicketsCerts() {
       addToast(`Failed to remove Certificate for ${name}`, 'error');
     }
   };
+
+  const handleIssueSingleCertificate = async (id, name) => {
+    setIssuingCertId(id);
+    try {
+      const { data } = await api.post(`/events/registrations/${id}/issue-certificate`);
+      setRegistrations(prev => prev.map(t => t._id === id ? { ...t, certificate: data.certificate } : t));
+      addToast(`Certificate generated and issued for ${name || 'participant'}!`, 'success');
+    } catch (err) {
+      addToast(err.response?.data?.error?.message || `Failed to issue certificate for ${name}`, 'error');
+    } finally {
+      setIssuingCertId(null);
+    }
+  };
+
+  const handleBulkIssue = async () => {
+    let endpoint = '';
+    let targetEventTitle = '';
+
+    if (eventFilter !== 'All Events') {
+      const match = registrations.find(r => r.eventId?.title === eventFilter);
+      const targetEventId = match?.eventId?._id;
+      if (!targetEventId) {
+        addToast('Please select a specific event from the filter to issue certificates.', 'error');
+        return;
+      }
+      endpoint = `/events/${targetEventId}/bulk-certificates`;
+      targetEventTitle = eventFilter;
+    } else {
+      endpoint = '/events/bulk-certificates/all';
+      targetEventTitle = 'all attendees across all events';
+    }
+
+    setBulkIssuing(true);
+    try {
+      const { data } = await api.post(endpoint);
+      addToast(data.message || `Certificates generated for ${targetEventTitle}!`, 'success');
+      await fetchRegistrations();
+    } catch (err) {
+      addToast(err.response?.data?.error?.message || 'Failed to bulk issue certificates', 'error');
+    } finally {
+      setBulkIssuing(false);
+    }
+  };
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
   const columns = ['Participant', 'Event', 'QR Entry Pass', 'Certificate'];
 
@@ -130,22 +159,22 @@ function HostTicketsCerts() {
           <div className="host-tickets__status-cell">
             {ticket.qrTicket ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <a href={`http://localhost:5000${ticket.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                <a href={ticket.qrTicket.startsWith('data:') ? ticket.qrTicket : `${apiBase}${ticket.qrTicket}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                   <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
                     <CheckCircle2 size={12} strokeWidth={2.5} />
                     View Pass
                   </span>
                 </a>
                 <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Replace QR Pass">
-                  <input 
-                    type="file" 
-                    accept="image/*,.pdf" 
-                    style={{ display: 'none' }} 
-                    onChange={(e) => handleIssueQR(e, ticket._id, student.name)} 
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    style={{ display: 'none' }}
+                    onChange={(e) => handleIssueQR(e, ticket._id, student.name)}
                   />
                   <RefreshCcw size={14} />
                 </label>
-                <button 
+                <button
                   onClick={() => handleDeleteQR(ticket._id, student.name)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
                   title="Remove QR Pass"
@@ -155,11 +184,11 @@ function HostTicketsCerts() {
               </div>
             ) : (
               <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
-                <input 
-                  type="file" 
-                  accept="image/*,.pdf" 
-                  style={{ display: 'none' }} 
-                  onChange={(e) => handleIssueQR(e, ticket._id, student.name)} 
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleIssueQR(e, ticket._id, student.name)}
                 />
                 <Upload size={14} strokeWidth={2} />
                 Upload QR
@@ -171,22 +200,13 @@ function HostTicketsCerts() {
           <div className="host-tickets__status-cell">
             {ticket.certificate ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <a href={`http://localhost:5000${ticket.certificate}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                <a href={ticket.certificate.startsWith('http') ? ticket.certificate : `${apiBase}${ticket.certificate}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                   <span className="host-data-table__status-badge host-data-table__status-badge--issued" style={{ cursor: 'pointer' }}>
                     <CheckCircle2 size={12} strokeWidth={2.5} />
                     View Cert
                   </span>
                 </a>
-                <label style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Replace Certificate">
-                  <input 
-                    type="file" 
-                    accept="image/*,.pdf" 
-                    style={{ display: 'none' }} 
-                    onChange={(e) => handleIssueCertificate(e, ticket._id, student.name)} 
-                  />
-                  <RefreshCcw size={14} />
-                </label>
-                <button 
+                <button
                   onClick={() => handleDeleteCertificate(ticket._id, student.name)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}
                   title="Remove Certificate"
@@ -195,16 +215,32 @@ function HostTicketsCerts() {
                 </button>
               </div>
             ) : (
-              <label className="host-tickets__upload-btn" style={{ cursor: 'pointer' }}>
-                <input 
-                  type="file" 
-                  accept="image/*,.pdf" 
-                  style={{ display: 'none' }} 
-                  onChange={(e) => handleIssueCertificate(e, ticket._id, student.name)} 
-                />
-                <Upload size={14} strokeWidth={2} />
-                Upload Cert
-              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="host-data-table__status-badge" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-tertiary)' }}>
+                  Not Issued
+                </span>
+                <button
+                  onClick={() => handleIssueSingleCertificate(ticket._id, student.name)}
+                  disabled={issuingCertId === ticket._id}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    border: '1px solid rgba(212, 175, 55, 0.4)',
+                    background: 'rgba(212, 175, 55, 0.08)',
+                    color: 'var(--primary)',
+                    cursor: issuingCertId === ticket._id ? 'not-allowed' : 'pointer'
+                  }}
+                  title="Generate & Issue Certificate"
+                >
+                  <Award size={12} />
+                  {issuingCertId === ticket._id ? 'Issuing...' : 'Issue Cert'}
+                </button>
+              </div>
             )}
           </div>
         </td>
@@ -216,7 +252,26 @@ function HostTicketsCerts() {
     <div className="host-tickets">
       <HostPageHeader
         title="Tickets & Entry Passes"
-        subtitle="Upload and issue QR entry passes for your upcoming events."
+        subtitle="Manage automated QR entry passes and bulk-issue participation certificates."
+        action={
+          <button
+            className="host-modal__btn host-modal__btn--primary"
+            onClick={handleBulkIssue}
+            disabled={bulkIssuing || registrations.length === 0}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              fontWeight: 600,
+              cursor: bulkIssuing ? 'not-allowed' : 'pointer',
+              opacity: bulkIssuing ? 0.7 : 1,
+            }}
+          >
+            <Award size={18} />
+            {bulkIssuing ? 'Generating Certificates...' : 'Generate & Issue to All Attendees'}
+          </button>
+        }
       />
 
       <div className="host-tickets__controls">

@@ -1,6 +1,6 @@
 const express = require('express');
 const { z } = require('zod');
-const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, verifyPayment, uploadQrTicket, uploadCertificate, deleteQrTicket, deleteCertificate, getEventRegistrations, getClubRegistrations, uploadGalleryImage, deleteEvent } = require('../controllers/eventController');
+const { getEvents, getEvent, createEvent, updateEvent, registerForEvent, getMyRegistrations, verifyPayment, uploadQrTicket, deleteQrTicket, deleteCertificate, getEventRegistrations, getClubRegistrations, uploadGalleryImage, deleteEvent, checkInAttendee, bulkIssueCertificates, bulkIssueAllCertificates, issueSingleCertificate } = require('../controllers/eventController');
 const { authenticate, authorizeOwner, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { validate } = require('../middleware/validate');
@@ -32,7 +32,8 @@ const isClubOwner = async (req) => {
 };
 
 const isEventOwner = async (req) => {
-  const eventId = req.params.id || (await EventRegistration.findById(req.params.id)).eventId;
+  if (req.params.id === 'all') return true;
+  const eventId = req.params.id || (await EventRegistration.findById(req.params.id))?.eventId;
   if (!eventId) return false;
   const event = await Event.findById(eventId);
   if (!event) return false;
@@ -59,6 +60,9 @@ router.put('/:id', authenticate, authorizeOwner(isEventOwner), upload.single('co
 router.delete('/:id', authenticate, authorizeOwner(isEventOwner), deleteEvent);
 router.get('/:id/registrations', authenticate, authorizeOwner(isEventOwner), getEventRegistrations);
 router.post('/:id/gallery', authenticate, authorizeOwner(isEventOwner), upload.array('galleryImages', 10), uploadGalleryImage);
+router.post('/:id/check-in', authenticate, authorizeOwner(isEventOwner), checkInAttendee);
+router.post('/bulk-certificates/all', authenticate, authorize('Host'), bulkIssueAllCertificates);
+router.post('/:id/bulk-certificates', authenticate, authorizeOwner(isEventOwner), bulkIssueCertificates);
 
 // Student Registration
 router.get('/registrations/student/me', authenticate, authorize('Student'), getMyRegistrations);
@@ -68,8 +72,8 @@ router.post('/:id/register', authenticate, authorize('Student'), upload.single('
 router.put('/registrations/:id/payment', authenticate, authorizeOwner(isRegistrationOwner), verifyPayment);
 router.post('/registrations/:id/qr-ticket', authenticate, authorizeOwner(isRegistrationOwner), upload.single('qrTicket'), uploadQrTicket);
 router.delete('/registrations/:id/qr-ticket', authenticate, authorizeOwner(isRegistrationOwner), deleteQrTicket);
-router.post('/registrations/:id/certificate', authenticate, authorizeOwner(isRegistrationOwner), upload.single('certificate'), uploadCertificate);
 router.delete('/registrations/:id/certificate', authenticate, authorizeOwner(isRegistrationOwner), deleteCertificate);
+router.post('/registrations/:id/issue-certificate', authenticate, authorizeOwner(isRegistrationOwner), issueSingleCertificate);
 router.delete('/registrations/:id', authenticate, authorizeOwner(isRegistrationOwner), async (req, res, next) => {
   try {
     const reg = await EventRegistration.findById(req.params.id);

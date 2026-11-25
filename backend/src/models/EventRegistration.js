@@ -24,7 +24,17 @@ const eventRegistrationSchema = new mongoose.Schema(
       type: String, // Path to payment screenshot
     },
     qrTicket: {
-      type: String, // uploaded manually by host for this specific registration
+      type: String, // uploaded manually or auto-generated base64 data URL
+    },
+    qrToken: {
+      type: String,
+    },
+    attended: {
+      type: Boolean,
+      default: false,
+    },
+    checkInTime: {
+      type: Date,
     },
     certificate: {
       type: String, // Path to uploaded certificate

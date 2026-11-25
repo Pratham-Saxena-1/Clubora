@@ -1,11 +1,12 @@
 const express = require('express');
-const { issueCertificate, getMyCertificates } = require('../controllers/certificateController');
+const { getMyCertificates, verifyCertificate } = require('../controllers/certificateController');
 const { authenticate, authorize } = require('../middleware/auth');
-const upload = require('../middleware/upload');
 
 const router = express.Router();
 
-router.post('/issue', authenticate, authorize('Host'), upload.single('certificateFile'), issueCertificate);
+// Public verification route - accessible without authentication
+router.get('/verify/:id', verifyCertificate);
+
 router.get('/student/me', authenticate, authorize('Student'), getMyCertificates);
 
 module.exports = router;

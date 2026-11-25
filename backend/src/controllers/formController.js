@@ -114,6 +114,9 @@ exports.submitFormResponse = async (req, res, next) => {
       });
       return res.status(201).json({ formResponse, application });
     } else if (contextType === 'Event') {
+      const Event = require('../models/Event');
+      const event = await Event.findById(contextId);
+
       const payload = {
         eventId: contextId,
         studentId: req.user.id,
@@ -123,6 +126,13 @@ exports.submitFormResponse = async (req, res, next) => {
         payload.paymentScreenshot = `/uploads/${req.file.filename}`;
       }
       const registration = await EventRegistration.create(payload);
+
+      // Auto-generate QR code if event is free
+      if (event && !event.isPaid) {
+        const { confirmAndAttachQR } = require('../utils/qrHelper');
+        await confirmAndAttachQR(registration, event.title);
+      }
+
       return res.status(201).json({ formResponse, registration });
     }
 
