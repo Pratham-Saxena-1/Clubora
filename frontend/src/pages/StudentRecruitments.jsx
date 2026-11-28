@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { FileText, Clock, Briefcase, CheckCircle, Loader2, X, Upload } from 'lucide-react';
+import { FileText, Clock, Briefcase, CheckCircle, X, Upload } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import LatticeLoader from '../components/LatticeLoader';
 import DynamicFormFiller from '../components/DynamicFormFiller';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +12,7 @@ function StudentRecruitments() {
   const [applied, setApplied] = useState({});
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  
+
   // Application Modal state
   const [selectedVacancy, setSelectedVacancy] = useState(null);
   const [answers, setAnswers] = useState({});
@@ -33,7 +34,7 @@ function StudentRecruitments() {
         api.get(`/applications/student/${user.id}`)
       ]);
       setVacancies(vacRes.data);
-      
+
       const appliedMap = {};
       appRes.data.forEach(app => {
         appliedMap[app.recruitmentId?._id || app.recruitmentId] = true;
@@ -57,7 +58,7 @@ function StudentRecruitments() {
 
     try {
       const apiFormData = new FormData();
-      
+
       // If there is any file inside answers (which happens for file_upload fields in DynamicFormFiller)
       // For now, the backend formController JSON parses answers. We need to handle file uploads carefully.
       // But we can just send it as normal, since the backend handles it. Wait, if answers contains a File object, JSON.stringify will fail or omit it.
@@ -75,7 +76,7 @@ function StudentRecruitments() {
           formattedAnswers.push({ fieldId: key, value: answers[key] });
         }
       });
-      
+
       apiFormData.append('contextType', 'Recruitment');
       apiFormData.append('contextId', selectedVacancy._id);
       apiFormData.append('formId', selectedVacancy.formId?._id || selectedVacancy.formId);
@@ -107,13 +108,13 @@ function StudentRecruitments() {
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
-          <Loader2 className="spin" size={32} style={{ color: 'var(--primary)' }} />
+          <LatticeLoader status="working" label="Loading vacancies" pattern="orbit" grid={3} shape="round" cellSize={6} gap={2} fontSize={14} step={90} idleOpacity={0.15} showTimer color="#f5f5f5" />
         </div>
       ) : (
         <div className="host-dashboard__events-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
           {vacancies.length > 0 ? vacancies.map((vacancy) => (
             <div key={vacancy._id} className="host-event-card hover-lift" style={{ display: 'flex', flexDirection: 'column', padding: '24px', gap: '20px', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)' }}>
-              
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--primary)' }}>
                   <Briefcase size={20} />
@@ -128,7 +129,7 @@ function StudentRecruitments() {
 
               <div style={{ flex: 1 }}>
                 <p className="host-event-card__desc" style={{ fontSize: '14px', lineHeight: 1.6, marginBottom: '16px', color: 'var(--text-secondary)' }}>{vacancy.description}</p>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-tertiary)', fontSize: '12px', fontWeight: 500 }}>
                   <Clock size={14} style={{ color: 'var(--text-secondary)' }} />
                   <span>Deadline: {new Date(vacancy.deadline).toLocaleDateString()}</span>
@@ -141,7 +142,7 @@ function StudentRecruitments() {
                     <CheckCircle size={16} /> Applied
                   </button>
                 ) : (
-                  <button 
+                  <button
                     className="host-modal__btn host-modal__btn--primary"
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px' }}
                     onClick={() => handleOpenApplication(vacancy)}
@@ -152,9 +153,9 @@ function StudentRecruitments() {
               </div>
             </div>
           )) : (
-             <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                No active vacancies found. Check back later!
-             </div>
+            <div style={{ gridColumn: '1 / -1', padding: '40px', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+              No active vacancies found. Check back later!
+            </div>
           )}
         </div>
       )}
@@ -181,11 +182,13 @@ function StudentRecruitments() {
                   <p style={{ color: 'var(--text-secondary)' }}>No dynamic form attached to this vacancy. You can proceed to apply.</p>
                 </div>
               )}
-              
+
               <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
                 <button type="button" className="host-modal__btn host-modal__btn--secondary" style={{ flex: 1 }} onClick={() => setSelectedVacancy(null)}>Cancel</button>
                 <button type="submit" className="host-modal__btn host-modal__btn--primary" style={{ flex: 1 }} disabled={submitting}>
-                  {submitting ? <Loader2 className="spin" size={16} /> : 'Submit Application'}
+                  {submitting ? (
+                    <LatticeLoader status="working" label="Submitting" pattern="orbit" grid={3} shape="round" cellSize={4} gap={2} fontSize={13} step={90} idleOpacity={0.15} showTimer={false} color="#f5f5f5" />
+                  ) : 'Submit Application'}
                 </button>
               </div>
             </form>

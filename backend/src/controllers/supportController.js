@@ -30,7 +30,11 @@ exports.createTicket = async (req, res, next) => {
 
 exports.getMyTickets = async (req, res, next) => {
   try {
-    const tickets = await Ticket.find({ userId: req.user.id }).populate('userId', 'name email regNumber').sort({ createdAt: -1 });
+    const tickets = await Ticket.find({ userId: req.user.id })
+      .populate('userId', 'name email regNumber')
+      .populate('clubId', 'name')
+      .populate('eventId', 'title')
+      .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
     next(error);

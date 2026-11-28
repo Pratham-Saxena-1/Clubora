@@ -1,0 +1,161 @@
+.greeting-emblem {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --mag-x: 0px;
+  --mag-y: 0px;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(109, 1, 26, 0.35);
+  border-radius: 10px;
+  background: rgba(109, 1, 26, 0.14);
+  color: #a30227;
+  cursor: pointer;
+  outline: none;
+  transform: perspective(180px) translate3d(var(--mag-x), var(--mag-y), 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.greeting-emblem:hover,
+.greeting-emblem:focus-visible {
+  background: rgba(109, 1, 26, 0.34);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  box-shadow: 0 0 18px rgba(109, 1, 26, 0.65), inset 0 0 8px rgba(255, 255, 255, 0.12);
+}
+
+.greeting-emblem__svg {
+  position: relative;
+  z-index: 2;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.greeting-emblem__main-star {
+  fill: rgba(109, 1, 26, 0.28);
+  transition: fill 0.25s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: 11.5px 9.5px;
+}
+
+.greeting-emblem.is-hovered .greeting-emblem__main-star {
+  fill: rgba(255, 255, 255, 0.22);
+  transform: scale(1.06);
+}
+
+.greeting-emblem__sat-top,
+.greeting-emblem__sat-dot {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+}
+
+.greeting-emblem.is-hovered .greeting-emblem__sat-top {
+  transform: translate(1.2px, -1.2px);
+}
+
+.greeting-emblem.is-hovered .greeting-emblem__sat-dot {
+  transform: translate(-1px, 1px);
+}
+
+.greeting-emblem.is-bursting .greeting-emblem__svg {
+  animation: emblem-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.greeting-emblem__ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.greeting-emblem.is-bursting .greeting-emblem__ring {
+  animation: emblem-ring-burst 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.greeting-emblem__sparks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.greeting-emblem__spark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 6px #6d011a;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0);
+}
+
+.greeting-emblem.is-bursting .greeting-emblem__spark {
+  animation: emblem-spark-out 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.greeting-emblem__tooltip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-6px);
+  padding: 5px 11px;
+  border-radius: 9999px;
+  background: rgba(14, 14, 14, 0.92);
+  border: 1px solid rgba(109, 1, 26, 0.6);
+  color: #f5f5f5;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 20;
+}
+
+.greeting-emblem.is-hovered .greeting-emblem__tooltip,
+.greeting-emblem:focus-visible .greeting-emblem__tooltip,
+.greeting-emblem.is-bursting .greeting-emblem__tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+@keyframes emblem-pop {
+  0% { transform: scale(1) rotate(0deg); }
+  35% { transform: scale(1.22) rotate(90deg); }
+  100% { transform: scale(1) rotate(180deg); }
+}
+
+@keyframes emblem-ring-burst {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.75);
+  }
+}
+
+@keyframes emblem-spark-out {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-6px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-24px) scale(0.2);
+  }
+}

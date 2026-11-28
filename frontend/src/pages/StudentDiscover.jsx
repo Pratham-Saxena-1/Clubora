@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, MapPin, X, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Search, MapPin, X, Calendar as CalendarIcon } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import LatticeLoader from '../components/LatticeLoader';
 import DynamicFormFiller from '../components/DynamicFormFiller';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
@@ -9,12 +10,12 @@ function StudentDiscover() {
   const [searchTerm, setSearchTerm] = useState('');
   const [entryFilter, setEntryFilter] = useState('All');
   const [selectedEvent, setSelectedEvent] = useState(null);
-  
+
   // Real data state
   const [events, setEvents] = useState([]);
   const [registeredEvents, setRegisteredEvents] = useState({});
   const [loading, setLoading] = useState(true);
-  
+
   // Registration form state
   const [isRegistering, setIsRegistering] = useState(false);
   const [answers, setAnswers] = useState({});
@@ -50,8 +51,8 @@ function StudentDiscover() {
   };
 
   const filteredEvents = events.filter(event => {
-    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          (event.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEntry = entryFilter === 'All' ? true : entryFilter === 'Free' ? !event.isPaid : event.isPaid;
     return matchesSearch && matchesEntry;
   });
@@ -65,29 +66,29 @@ function StudentDiscover() {
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    
+
     try {
       const formData = new FormData();
       if (selectedEvent.isPaid && e.target.paymentScreenshot) {
         formData.append('file', e.target.paymentScreenshot.files[0]); // We use 'file' in upload.single('file') in form routes
       }
-      
+
       const formattedAnswers = [];
       Object.keys(answers).forEach(key => {
         formattedAnswers.push({ fieldId: key, value: answers[key] });
       });
-      
+
       formData.append('contextType', 'Event');
       formData.append('contextId', selectedEvent._id);
       formData.append('formId', selectedEvent.formId?._id || selectedEvent.formId);
       formData.append('answers', JSON.stringify(formattedAnswers));
-      
+
       if (selectedEvent.formId) {
         await api.post(`/forms/${selectedEvent.formId._id || selectedEvent.formId}/submit`, formData);
       } else {
         await api.post(`/events/${selectedEvent._id}/register`, formData);
       }
-      
+
       setRegisteredEvents(prev => ({ ...prev, [selectedEvent._id]: true }));
       addToast('Successfully registered for the event!', 'success');
       setIsRegistering(false);
@@ -117,8 +118,8 @@ function StudentDiscover() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select 
-          className="host-modal__input" 
+        <select
+          className="host-modal__input"
           style={{ width: 'auto', padding: '10px 16px', cursor: 'pointer' }}
           value={entryFilter}
           onChange={(e) => setEntryFilter(e.target.value)}
@@ -131,7 +132,7 @@ function StudentDiscover() {
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
-          <Loader2 className="spin" size={32} style={{ color: 'var(--primary)' }} />
+          <LatticeLoader status="working" label="Loading events" pattern="orbit" grid={3} shape="round" cellSize={6} gap={2} fontSize={14} step={90} idleOpacity={0.15} showTimer color="#f5f5f5" />
         </div>
       ) : (
         <div className="host-dashboard__events-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
@@ -140,26 +141,26 @@ function StudentDiscover() {
               <div key={event._id} className="host-event-card" style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                    {event.clubId?.name?.substring(0,2).toUpperCase() || 'EV'}
+                    {event.clubId?.name?.substring(0, 2).toUpperCase() || 'EV'}
                   </div>
                   <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {event.clubId?.name || 'Organizer'}
                   </span>
                 </div>
-                
+
                 <div className="host-event-card__cover" style={{ height: '140px', background: 'var(--bg-tertiary)' }}>
                   {event.coverImage ? (
                     <img src={event.coverImage} alt={event.title} className="host-event-card__cover-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div className="host-event-card__cover-placeholder" style={{ opacity: 0.2, fontSize: '3rem', fontWeight: 'bold' }}>
-                      {event.clubId?.name?.substring(0,2).toUpperCase() || 'EV'}
+                      {event.clubId?.name?.substring(0, 2).toUpperCase() || 'EV'}
                     </div>
                   )}
                 </div>
 
                 <div className="host-event-card__body" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <h3 className="host-event-card__title" style={{ fontSize: '1.1rem', marginBottom: '8px' }}>{event.title}</h3>
-                  
+
                   <p className="host-event-card__desc" style={{ WebkitLineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden', flex: 1 }}>
                     {event.description}
                   </p>
@@ -168,14 +169,14 @@ function StudentDiscover() {
                     <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
                       {event.isPaid ? 'Paid Entry' : 'FREE'}
                     </span>
-                    
+
                     {registeredEvents[event._id] ? (
                       <button className="host-modal__btn" style={{ padding: '6px 16px', fontSize: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }} disabled>
                         Registered
                       </button>
                     ) : (
-                      <button 
-                        className="host-modal__btn host-modal__btn--primary" 
+                      <button
+                        className="host-modal__btn host-modal__btn--primary"
                         style={{ padding: '6px 16px', fontSize: '12px' }}
                         onClick={() => setSelectedEvent(event)}
                       >
@@ -199,13 +200,13 @@ function StudentDiscover() {
         <div className="host-modal__overlay" style={{ backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', background: 'rgba(5, 5, 5, 0.6)' }} onClick={() => { setSelectedEvent(null); setIsRegistering(false); }}>
           <div className="host-modal" style={{ maxWidth: '560px', padding: 0, overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
             {/* Modal Header Gradient */}
-            <div style={{ height: '140px', flexShrink: 0, background: 'linear-gradient(135deg, rgba(179, 141, 69, 0.4) 0%, rgba(5, 5, 5, 0.8) 100%)', position: 'relative', padding: '24px', display: 'flex', alignItems: 'flex-end' }}>
+            <div style={{ height: '140px', flexShrink: 0, background: 'linear-gradient(135deg, rgba(109, 1, 26, 0.6) 0%, rgba(0, 0, 0, 0.95) 100%)', position: 'relative', padding: '24px', display: 'flex', alignItems: 'flex-end' }}>
               <button onClick={() => { setSelectedEvent(null); setIsRegistering(false); }} style={{ position: 'absolute', top: '16px', right: '16px', width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(0,0,0,0.5)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={18} />
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '2px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {selectedEvent.clubId?.name?.substring(0,2).toUpperCase() || 'EV'}
+                  {selectedEvent.clubId?.name?.substring(0, 2).toUpperCase() || 'EV'}
                 </div>
                 <div>
                   <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '12px' }}>
@@ -257,7 +258,7 @@ function StudentDiscover() {
                     <h3 style={{ fontSize: '1.1rem', marginBottom: '8px' }}>Complete Registration</h3>
                     <p style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Please fill out the following details requested by the organizer.</p>
                   </div>
-                  
+
                   {selectedEvent.isPaid && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
                       <div style={{ background: 'var(--bg-tertiary)', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
@@ -265,29 +266,31 @@ function StudentDiscover() {
                         <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Please complete the payment and upload a screenshot of the transaction as proof.</p>
                         <div className="host-modal__field" style={{ marginBottom: 0 }}>
                           <label className="host-modal__label">Payment Proof (Screenshot)</label>
-                          <input 
-                            type="file" 
+                          <input
+                            type="file"
                             name="paymentScreenshot"
-                            className="host-modal__input" 
+                            className="host-modal__input"
                             accept="image/jpeg, image/png, image/jpg"
-                            required 
+                            required
                           />
                         </div>
                       </div>
                     </div>
                   )}
-                    {selectedEvent.formId ? (
-                      <DynamicFormFiller form={selectedEvent.formId} answers={answers} setAnswers={setAnswers} />
-                    ) : (
-                      <div className="host-modal__field" style={{ marginBottom: '24px' }}>
-                        <p style={{ color: 'var(--text-secondary)' }}>No dynamic form attached to this event. You can proceed to register.</p>
-                      </div>
-                    )}
-                  
+                  {selectedEvent.formId ? (
+                    <DynamicFormFiller form={selectedEvent.formId} answers={answers} setAnswers={setAnswers} />
+                  ) : (
+                    <div className="host-modal__field" style={{ marginBottom: '24px' }}>
+                      <p style={{ color: 'var(--text-secondary)' }}>No dynamic form attached to this event. You can proceed to register.</p>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <button type="button" className="host-modal__btn host-modal__btn--secondary" style={{ flex: 1 }} onClick={() => setIsRegistering(false)}>Back</button>
                     <button type="submit" className="host-modal__btn host-modal__btn--primary" style={{ flex: 1 }} disabled={submitting}>
-                      {submitting ? <Loader2 className="spin" size={16} /> : 'Confirm Registration'}
+                      {submitting ? (
+                        <LatticeLoader status="working" label="Registering" pattern="orbit" grid={3} shape="round" cellSize={4} gap={2} fontSize={13} step={90} idleOpacity={0.15} showTimer={false} color="#f5f5f5" />
+                      ) : 'Confirm Registration'}
                     </button>
                   </div>
                 </form>

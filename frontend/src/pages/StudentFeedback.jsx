@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Star, Send, MessageSquare, CheckCircle, Loader2 } from 'lucide-react';
+import { Star, Send, MessageSquare, CheckCircle } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import LatticeLoader from '../components/LatticeLoader';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
@@ -22,7 +23,7 @@ function StudentFeedback() {
       ]);
       // Assume all registered events are open for feedback for simplicity
       setEvents(regs.map(reg => reg.eventId).filter(Boolean));
-      
+
       const submittedFeedbacks = {};
       tickets.forEach(ticket => {
         if (ticket.type === 'Feedback' && ticket.eventId) {
@@ -57,10 +58,10 @@ function StudentFeedback() {
       addToast('Please provide a rating before submitting.', 'error');
       return;
     }
-    
+
     try {
       const description = `Event: ${event.title}\nRating: ${fb.rating} Stars\nFeedback: ${fb.text || 'No text provided'}`;
-      
+
       await api.post('/support', {
         type: 'Feedback',
         subject: `Feedback for ${event.title}`,
@@ -88,8 +89,7 @@ function StudentFeedback() {
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
-          <Loader2 className="spin" size={32} style={{ color: 'var(--primary)' }} />
-          <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+          <LatticeLoader status="working" label="Loading feedback" pattern="orbit" grid={3} shape="round" cellSize={6} gap={2} fontSize={14} step={90} idleOpacity={0.15} showTimer color="#f5f5f5" />
         </div>
       ) : events.length === 0 ? (
         <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>You haven't registered for any events yet.</div>
@@ -134,8 +134,8 @@ function StudentFeedback() {
                       <MessageSquare size={16} style={{ position: 'absolute', right: '12px', top: '12px', color: 'var(--text-tertiary)', pointerEvents: 'none' }} />
                     </div>
 
-                    <button 
-                      className="host-modal__btn host-modal__btn--primary" 
+                    <button
+                      className="host-modal__btn host-modal__btn--primary"
                       onClick={() => handleSubmit(event)}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                     >

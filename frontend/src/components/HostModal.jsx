@@ -20,7 +20,7 @@ function HostModal({ isOpen, onClose, title, children, footer }) {
       <div className="host-modal" onClick={(e) => e.stopPropagation()}>
         <div className="host-modal__header">
           <h2 className="host-modal__title">{title}</h2>
-          <button className="host-modal__close" onClick={onClose} aria-label="Close modal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#000', cursor: 'pointer', padding: '4px' }}>
+          <button className="host-modal__close" onClick={onClose} aria-label="Close modal" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px' }}>
             <X size={18} strokeWidth={2.5} />
           </button>
         </div>

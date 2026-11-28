@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, User, Shield, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, Shield, ArrowRight } from 'lucide-react';
+import LatticeLoader from '../components/LatticeLoader';
 
 export default function Signup() {
   const [name, setName] = useState('');
@@ -10,7 +11,7 @@ export default function Signup() {
   const [role, setRole] = useState('Student');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const navigate = useNavigate();
   const { signup } = useAuth();
 
@@ -18,10 +19,10 @@ export default function Signup() {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
+
     const result = await signup(name, email, password, role);
     setIsLoading(false);
-    
+
     if (result.success) {
       if (result.role === 'Host') {
         navigate('/host/dashboard');
@@ -37,7 +38,7 @@ export default function Signup() {
     <div style={styles.container}>
       <div style={styles.glow1} />
       <div style={styles.glow2} />
-      
+
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.logo}>
@@ -52,15 +53,15 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.roleGroup}>
-            <button 
-              type="button" 
+            <button
+              type="button"
               style={role === 'Student' ? styles.roleBtnActive : styles.roleBtn}
               onClick={() => setRole('Student')}
             >
               <User size={18} /> Student
             </button>
-            <button 
-              type="button" 
+            <button
+              type="button"
               style={role === 'Host' ? styles.roleBtnActive : styles.roleBtn}
               onClick={() => setRole('Host')}
             >
@@ -91,7 +92,7 @@ export default function Signup() {
               required
             />
           </div>
-          
+
           <div style={styles.inputGroup}>
             <Lock style={styles.icon} size={20} />
             <input
@@ -106,7 +107,11 @@ export default function Signup() {
           </div>
 
           <button type="submit" style={styles.button} disabled={isLoading}>
-            {isLoading ? <Loader2 className="spin" size={20} /> : <span>Sign Up</span>}
+            {isLoading ? (
+              <LatticeLoader status="working" label="Creating account" pattern="orbit" grid={3} shape="round" cellSize={5} gap={2} fontSize={14} step={90} idleOpacity={0.15} showTimer={false} color="#f5f5f5" />
+            ) : (
+              <span>Sign Up</span>
+            )}
             {!isLoading && <ArrowRight size={18} />}
           </button>
         </form>
@@ -130,7 +135,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'var(--bg-primary)',
+    backgroundColor: '#000000',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -140,7 +145,7 @@ const styles = {
     right: '-10%',
     width: '600px',
     height: '600px',
-    background: 'radial-gradient(circle, rgba(179, 141, 69, 0.12) 0%, rgba(0,0,0,0) 70%)',
+    background: 'radial-gradient(circle, rgba(109, 1, 26, 0.35) 0%, rgba(0,0,0,0) 70%)',
     zIndex: 0,
   },
   glow2: {
@@ -149,19 +154,19 @@ const styles = {
     left: '-10%',
     width: '600px',
     height: '600px',
-    background: 'radial-gradient(circle, rgba(179, 141, 69, 0.08) 0%, rgba(0,0,0,0) 70%)',
+    background: 'radial-gradient(circle, rgba(109, 1, 26, 0.25) 0%, rgba(0,0,0,0) 70%)',
     zIndex: 0,
   },
   card: {
     width: '100%',
     maxWidth: '460px',
-    background: 'var(--bg-glass)',
+    background: '#0A0A0A',
     backdropFilter: 'blur(12px)',
-    border: '1px solid var(--border)',
+    border: '1px solid rgba(109, 1, 26, 0.4)',
     borderRadius: 'var(--radius-xl)',
     padding: '48px',
     zIndex: 1,
-    boxShadow: 'var(--shadow-lg)',
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95), 0 0 25px rgba(109, 1, 26, 0.2)',
   },
   header: {
     textAlign: 'center',
@@ -177,29 +182,30 @@ const styles = {
   logoIcon: {
     width: '40px',
     height: '40px',
-    background: 'var(--primary)',
-    color: 'var(--primary-text)',
+    background: '#6D011A',
+    color: '#FFFFFF',
     borderRadius: '10px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontSize: '20px',
     fontWeight: '800',
+    boxShadow: '0 0 15px rgba(109, 1, 26, 0.6)',
   },
   logoText: {
     fontSize: '22px',
-    fontWeight: '700',
+    fontWeight: '800',
     letterSpacing: '2px',
-    color: 'var(--text-primary)',
+    color: '#FFFFFF',
   },
   title: {
     fontSize: '28px',
-    fontWeight: '700',
-    color: 'var(--text-primary)',
+    fontWeight: '800',
+    color: '#FFFFFF',
     marginBottom: '8px',
   },
   subtitle: {
-    color: 'var(--text-secondary)',
+    color: '#C8C8C8',
     fontSize: '15px',
   },
   error: {
@@ -229,9 +235,9 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    background: 'var(--bg-secondary)',
-    border: '1px solid var(--border)',
-    color: 'var(--text-secondary)',
+    background: '#141414',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    color: '#C8C8C8',
     borderRadius: 'var(--radius-md)',
     cursor: 'pointer',
     fontWeight: '600',
@@ -244,12 +250,13 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
-    background: 'var(--accent-soft)',
-    border: '1px solid var(--primary)',
-    color: 'var(--primary)',
+    background: 'rgba(109, 1, 26, 0.5)',
+    border: '1px solid #6D011A',
+    color: '#FFFFFF',
     borderRadius: 'var(--radius-md)',
     cursor: 'pointer',
-    fontWeight: '600',
+    fontWeight: '700',
+    boxShadow: '0 0 12px rgba(109, 1, 26, 0.4)',
     transition: 'var(--transition-fast)',
   },
   inputGroup: {
@@ -260,43 +267,44 @@ const styles = {
   icon: {
     position: 'absolute',
     left: '16px',
-    color: 'var(--text-tertiary)',
+    color: '#7E7E7E',
   },
   input: {
     width: '100%',
-    background: 'var(--bg-secondary)',
-    border: '1px solid var(--border)',
+    background: '#141414',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
     borderRadius: 'var(--radius-md)',
     padding: '14px 16px 14px 48px',
-    color: 'var(--text-primary)',
+    color: '#FFFFFF',
     fontSize: '15px',
     outline: 'none',
     transition: 'var(--transition-base)',
   },
   button: {
-    background: 'var(--primary)',
-    color: 'var(--primary-text)',
-    border: 'none',
+    background: '#6D011A',
+    color: '#FFFFFF',
+    border: '1px solid #6D011A',
     borderRadius: 'var(--radius-md)',
     padding: '16px',
     fontSize: '16px',
-    fontWeight: '600',
+    fontWeight: '700',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: '8px',
     marginTop: '8px',
-    transition: 'var(--transition-base)',
+    boxShadow: '0 4px 16px rgba(109, 1, 26, 0.5)',
+    transition: 'all 0.2s',
   },
   footerText: {
     textAlign: 'center',
     marginTop: '32px',
-    color: 'var(--text-secondary)',
+    color: '#C8C8C8',
     fontSize: '14px',
   },
   link: {
-    color: 'var(--primary)',
+    color: '#FF4D6D',
     textDecoration: 'none',
     fontWeight: '600',
   }

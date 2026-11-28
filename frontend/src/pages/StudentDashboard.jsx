@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CalendarCheck, UserCheck, Send, QrCode, Loader2, Award, Download, ArrowRight, Telescope, Sparkles, Building2 } from 'lucide-react';
+import { CalendarCheck, UserCheck, Send, QrCode, Award, Download, ArrowRight, Telescope, Building2 } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import LatticeLoader from '../components/LatticeLoader';
+import InteractiveGreetingEmblem from '../components/InteractiveGreetingEmblem';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
@@ -92,8 +94,26 @@ function StudentDashboard() {
   if (loading) {
     return (
       <div className="host-dashboard" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-primary)' }}>
-        <Loader2 className="spin" size={48} style={{ color: 'var(--primary)' }} />
-        <style>{`.spin { animation: spin 1s linear infinite; } @keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+        <LatticeLoader
+          status="working"
+          label="Loading"
+          doneLabel="Done in"
+          errorLabel="Failed after"
+          pattern="orbit"
+          grid={3}
+          shape="round"
+          doneColor="#22c55e"
+          errorColor="#ef4444"
+          cellSize={6}
+          gap={2}
+          fontSize={14}
+          step={90}
+          idleOpacity={0.15}
+          glow={false}
+          glowColor=""
+          showTimer
+          color="#f5f5f5"
+        />
       </div>
     );
   }
@@ -105,14 +125,14 @@ function StudentDashboard() {
     <div className="student-dashboard" style={{ position: 'relative', overflow: 'hidden' }}>
 
       {/* Background Ambient Glows */}
-      <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 60%)', zIndex: -1, pointerEvents: 'none', filter: 'blur(60px)' }}></div>
-      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.04) 0%, transparent 60%)', zIndex: -1, pointerEvents: 'none', filter: 'blur(60px)' }}></div>
+      <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(109, 1, 26, 0.3) 0%, transparent 60%)', zIndex: -1, pointerEvents: 'none', filter: 'blur(60px)' }}></div>
+      <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(109, 1, 26, 0.15) 0%, transparent 60%)', zIndex: -1, pointerEvents: 'none', filter: 'blur(60px)' }}></div>
 
       <StudentPageHeader
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span>Welcome back, {user?.name?.split(' ')[0] || 'Student'}</span>
-            <Sparkles size={24} style={{ color: 'var(--primary)' }} />
+            <InteractiveGreetingEmblem />
           </div>
         }
         subtitle="Here is an overview of your campus activities, event registrations, and club engagements."
@@ -243,48 +263,48 @@ function StudentDashboard() {
           </section>
 
           {/* Certificates Panel */}
-            {
-              earnedCertificates.length > 0 && (
-            <section style={{ ...stagger(6) }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Earned Certificates</h2>
-                <span className="badge-glass badge-gold" style={{ fontSize: '10px' }}>{certificatesCount} Total</span>
-              </div>
-              <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }} className="hide-scrollbar">
-                {earnedCertificates.map(cert => (
-                  <div key={cert._id} className="cert-glass-card hover-lift">
-                    <div className="cert-bg-pattern"></div>
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                      <div className="cert-icon-wrapper">
-                        <Award size={20} />
+          {
+            earnedCertificates.length > 0 && (
+              <section style={{ ...stagger(6) }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Earned Certificates</h2>
+                  <span className="badge-glass badge-gold" style={{ fontSize: '10px' }}>{certificatesCount} Total</span>
+                </div>
+                <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '12px' }} className="hide-scrollbar">
+                  {earnedCertificates.map(cert => (
+                    <div key={cert._id} className="cert-glass-card hover-lift">
+                      <div className="cert-bg-pattern"></div>
+                      <div style={{ position: 'relative', zIndex: 1 }}>
+                        <div className="cert-icon-wrapper">
+                          <Award size={20} />
+                        </div>
+                        <h4 className="cert-title">{cert.title}</h4>
+                        <span className="cert-subtitle">{cert.clubName}</span>
                       </div>
-                      <h4 className="cert-title">{cert.title}</h4>
-                      <span className="cert-subtitle">{cert.clubName}</span>
+                      <div className="cert-footer">
+                        <span className="cert-date">{new Date(cert.date).toLocaleDateString()}</span>
+                        {cert.certificate && (
+                          <a href={cert.certificate.startsWith('http') ? cert.certificate : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${cert.certificate}`} target="_blank" rel="noopener noreferrer" className="cert-download-btn" title="View / Download PDF">
+                            <Download size={14} />
+                          </a>
+                        )}
+                      </div>
                     </div>
-                    <div className="cert-footer">
-                      <span className="cert-date">{new Date(cert.date).toLocaleDateString()}</span>
-                      {cert.certificate && (
-                        <a href={cert.certificate.startsWith('http') ? cert.certificate : `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}${cert.certificate}`} target="_blank" rel="noopener noreferrer" className="cert-download-btn" title="View / Download PDF">
-                          <Download size={14} />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+                  ))}
+                </div>
+              </section>
+            )}
 
         </div>
 
         {/* Right Column: Applications */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-          
+
           <section style={{ ...stagger(7) }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>My Applications</h2>
             </div>
-            
+
             {applications.length === 0 ? (
               <div className="glass-card" style={{ padding: '40px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Send size={24} style={{ color: 'var(--text-tertiary)', marginBottom: '16px' }} />
@@ -295,7 +315,7 @@ function StudentDashboard() {
                 {applications.map((app, idx) => {
                   const isAccepted = ['Accepted', 'Hired'].includes(app.status);
                   const isRejected = ['Rejected', 'Declined'].includes(app.status);
-                  
+
                   return (
                     <div key={app._id} className="app-list-item" style={{ borderBottom: idx !== applications.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -319,7 +339,7 @@ function StudentDashboard() {
 
         </div>
       </div>
-      
+
       <style>{`
         /* Global & Animations */
         @keyframes fadeInUp {
@@ -354,8 +374,8 @@ function StudentDashboard() {
         
         .glass-card:hover {
           background: rgba(255, 255, 255, 0.03);
-          border-color: rgba(212, 175, 55, 0.3);
-          box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 175, 55, 0.1);
+          border-color: rgba(109, 1, 26, 0.5);
+          box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.6), 0 0 20px rgba(109, 1, 26, 0.25);
         }
 
         /* Stats Component */
@@ -372,17 +392,17 @@ function StudentDashboard() {
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--primary);
+          color: #FFFFFF;
         }
         
         .primary-glow {
-          background: rgba(212, 175, 55, 0.1);
-          border: 1px solid rgba(212, 175, 55, 0.2);
-          box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.1), 0 0 15px rgba(212, 175, 55, 0.15);
+          background: rgba(109, 1, 26, 0.35);
+          border: 1px solid rgba(109, 1, 26, 0.6);
+          box-shadow: inset 0 0 10px rgba(109, 1, 26, 0.2), 0 0 15px rgba(109, 1, 26, 0.4);
         }
 
         .text-gradient {
-          background: linear-gradient(135deg, #fff 0%, #d4af37 100%);
+          background: linear-gradient(135deg, #FFFFFF 0%, #FF4D6D 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -396,9 +416,9 @@ function StudentDashboard() {
           letter-spacing: 0.5px;
           border: 1px solid transparent;
         }
-        .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
-        .badge-gold { background: rgba(212, 175, 55, 0.15); color: #d4af37; border-color: rgba(212, 175, 55, 0.3); }
-        .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border-color: rgba(245, 158, 11, 0.3); }
+        .badge-blue { background: rgba(109, 1, 26, 0.2); color: #FFFFFF; border-color: rgba(109, 1, 26, 0.4); }
+        .badge-gold { background: rgba(109, 1, 26, 0.35); color: #FFFFFF; border-color: #6D011A; }
+        .badge-warning { background: rgba(255, 255, 255, 0.1); color: #FFFFFF; border-color: rgba(255, 255, 255, 0.2); }
 
         /* Empty State */
         .empty-state-card {
@@ -413,13 +433,13 @@ function StudentDashboard() {
           width: 80px;
           height: 80px;
           border-radius: 50%;
-          background: rgba(212, 175, 55, 0.05);
-          border: 1px solid rgba(212, 175, 55, 0.2);
+          background: rgba(109, 1, 26, 0.15);
+          border: 1px solid rgba(109, 1, 26, 0.4);
           display: flex;
           align-items: center;
           justify-content: center;
           margin-bottom: 24px;
-          box-shadow: 0 0 30px rgba(212, 175, 55, 0.1);
+          box-shadow: 0 0 30px rgba(109, 1, 26, 0.3);
         }
 
         /* Buttons */
@@ -436,22 +456,23 @@ function StudentDashboard() {
           transition: all 0.2s;
         }
         .btn-text-glow:hover {
-          color: #fff;
-          text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+          color: #FFFFFF;
+          text-shadow: 0 0 10px rgba(109, 1, 26, 0.8);
         }
 
         .btn-primary-glow {
           padding: 12px 24px;
-          background: var(--primary);
-          color: #000;
+          background: #6D011A;
+          color: #FFFFFF;
           font-weight: 700;
           font-size: 14px;
           border-radius: 12px;
-          box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+          box-shadow: 0 4px 15px rgba(109, 1, 26, 0.5);
           transition: all 0.2s;
         }
         .btn-primary-glow:hover {
-          box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+          background: #8C0222;
+          box-shadow: 0 6px 20px rgba(109, 1, 26, 0.8);
           transform: translateY(-2px);
         }
 
@@ -478,8 +499,8 @@ function StudentDashboard() {
           pointer-events: none;
         }
         .event-glass-card:hover {
-          border-color: rgba(212, 175, 55, 0.4);
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(212, 175, 55, 0.05);
+          border-color: rgba(109, 1, 26, 0.6);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(109, 1, 26, 0.15);
         }
         .event-card-header {
           display: flex;
@@ -490,14 +511,14 @@ function StudentDashboard() {
           width: 52px;
           height: 52px;
           border-radius: 16px;
-          background: rgba(212, 175, 55, 0.1);
-          border: 1px solid rgba(212, 175, 55, 0.2);
+          background: rgba(109, 1, 26, 0.25);
+          border: 1px solid rgba(109, 1, 26, 0.4);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 16px;
           font-weight: 700;
-          color: var(--primary);
+          color: #FFFFFF;
         }
         .event-date-pill {
           display: flex;
@@ -516,20 +537,21 @@ function StudentDashboard() {
           padding: 12px;
           font-size: 13px;
           font-weight: 700;
-          color: #000;
-          background: linear-gradient(135deg, var(--primary) 0%, #e8c658 100%);
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #8C0222 0%, #6D011A 100%);
           border-radius: 12px;
-          border: none;
+          border: 1px solid #6D011A;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
           transition: all 0.2s;
-          box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
+          box-shadow: 0 4px 12px rgba(109, 1, 26, 0.4);
         }
         .btn-ticket-active:hover {
-          box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
+          background: #8C0222;
+          box-shadow: 0 6px 16px rgba(109, 1, 26, 0.6);
         }
         .btn-ticket-pending {
           width: 100%;
@@ -564,24 +586,24 @@ function StudentDashboard() {
         .cert-bg-pattern {
           position: absolute;
           top: 0; right: 0; bottom: 0; left: 0;
-          background-image: radial-gradient(rgba(212, 175, 55, 0.1) 1px, transparent 1px);
+          background-image: radial-gradient(rgba(109, 1, 26, 0.2) 1px, transparent 1px);
           background-size: 20px 20px;
           opacity: 0.3;
           pointer-events: none;
         }
         .cert-glass-card:hover {
-          border-color: rgba(212, 175, 55, 0.3);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          border-color: rgba(109, 1, 26, 0.5);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
         }
         .cert-icon-wrapper {
           width: 40px;
           height: 40px;
           border-radius: 50%;
-          background: rgba(212, 175, 55, 0.1);
+          background: rgba(109, 1, 26, 0.25);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: var(--primary);
+          color: #FFFFFF;
           margin-bottom: 16px;
         }
         .cert-title {
@@ -621,9 +643,9 @@ function StudentDashboard() {
           border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .cert-download-btn:hover {
-          background: var(--primary);
-          color: #000;
-          border-color: var(--primary);
+          background: #6D011A;
+          color: #FFFFFF;
+          border-color: #6D011A;
         }
 
         /* Applications List */
@@ -663,7 +685,7 @@ function StudentDashboard() {
         .status-pending { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid rgba(255, 255, 255, 0.1); }
       `}</style>
     </div>
-        );
+  );
 }
 
-        export default StudentDashboard;
+export default StudentDashboard;

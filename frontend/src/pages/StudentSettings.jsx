@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Upload, Save, AlertTriangle } from 'lucide-react';
 import StudentPageHeader from '../components/StudentPageHeader';
+import HostModal from '../components/HostModal';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -15,10 +16,18 @@ function StudentSettings() {
     branch: '',
     profilePic: '',
   });
-  
+
   const [photoName, setPhotoName] = useState('Recommended: 200x200px JPG or PNG');
   const fileInputRef = useRef(null);
   const { addToast } = useToast();
+
+  const [manageModalOpen, setManageModalOpen] = useState(false);
+  const [manageTab, setManageTab] = useState('password'); 
+  const [pwEmail, setPwEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [delEmail, setDelEmail] = useState('');
+  const [delPassword, setDelPassword] = useState('');
+  const [delConfirm, setDelConfirm] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -47,10 +56,10 @@ function StudentSettings() {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setPhotoName(file.name);
-      
+
       const formData = new FormData();
       formData.append('profilePic', file);
-      
+
       try {
         const res = await api.post(`/users/${user.id}/profile-pic`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -81,15 +90,33 @@ function StudentSettings() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (window.confirm('Are you sure you want to permanently delete your account and all associated data? This action cannot be undone.')) {
-      try {
-        await api.delete(`/users/${user.id}`);
-        addToast('Account deleted successfully', 'success');
-        logout();
-      } catch (err) {
-        addToast('Failed to delete account', 'error');
-      }
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/users/${user.id}/password`, { email: pwEmail, newPassword });
+      addToast('Password changed successfully', 'success');
+      setManageModalOpen(false);
+      setPwEmail('');
+      setNewPassword('');
+    } catch (err) {
+      addToast(err.response?.data?.error?.message || 'Failed to change password', 'error');
+    }
+  };
+
+  const handleDeleteSubmit = async (e) => {
+    e.preventDefault();
+    if (delConfirm !== 'DELETE THIS ACCOUNT FOR ME') {
+      return addToast('Please type the exact confirmation phrase.', 'error');
+    }
+    try {
+      // Verify credentials first
+      await api.post('/auth/login', { email: delEmail, password: delPassword });
+      
+      await api.delete(`/users/${user.id}`);
+      addToast('Account deleted successfully', 'success');
+      logout();
+    } catch (err) {
+      addToast('Invalid credentials or failed to delete account', 'error');
     }
   };
 
@@ -103,7 +130,7 @@ function StudentSettings() {
       <form className="host-settings__form" onSubmit={handleSave}>
         <section className="host-settings__card">
           <h2 className="host-settings__card-title">Profile Information</h2>
-          
+
           <div className="host-settings__photo-section">
             <div className="host-settings__photo-preview">
               {formData.profilePic ? (
@@ -125,18 +152,18 @@ function StudentSettings() {
           <div style={{ marginTop: 'var(--space-xl)' }} className="host-settings__fields">
             <div className="host-settings__field">
               <label className="host-settings__label">Full Name</label>
-              <input 
-                type="text" 
-                className="host-settings__input" 
+              <input
+                type="text"
+                className="host-settings__input"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
             <div className="host-settings__field">
               <label className="host-settings__label">Email Address (Read-only)</label>
-              <input 
-                type="email" 
-                className="host-settings__input" 
+              <input
+                type="email"
+                className="host-settings__input"
                 value={formData.email}
                 readOnly
                 style={{ opacity: 0.7 }}
@@ -144,20 +171,20 @@ function StudentSettings() {
             </div>
             <div className="host-settings__field">
               <label className="host-settings__label">Registration Number</label>
-              <input 
-                type="text" 
-                className="host-settings__input" 
-                value={formData.regNumber} 
-                onChange={(e) => setFormData({...formData, regNumber: e.target.value})} 
+              <input
+                type="text"
+                className="host-settings__input"
+                value={formData.regNumber}
+                onChange={(e) => setFormData({ ...formData, regNumber: e.target.value })}
               />
             </div>
             <div className="host-settings__field">
               <label className="host-settings__label">Branch / Division</label>
-              <input 
-                type="text" 
-                className="host-settings__input" 
-                value={formData.branch} 
-                onChange={(e) => setFormData({...formData, branch: e.target.value})} 
+              <input
+                type="text"
+                className="host-settings__input"
+                value={formData.branch}
+                onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
               />
             </div>
           </div>
@@ -169,24 +196,96 @@ function StudentSettings() {
         </button>
       </form>
 
-      <section className="host-settings__card" style={{ marginTop: 'var(--space-xl)', border: '1px solid var(--error)' }}>
-        <h2 className="host-settings__card-title" style={{ color: 'var(--error)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertTriangle size={20} />
-          Danger Zone
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
-          Once you delete your account, there is no going back. Please be certain. This will also delete all your event registrations, applications, memberships, and earned certificates.
-        </p>
-        <button 
-          type="button" 
-          onClick={handleDeleteAccount}
-          style={{ background: 'var(--danger)', color: '#fff', padding: '12px 24px', borderRadius: 'var(--radius-md)', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(220, 38, 38, 0.2)' }}
-          onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(220, 38, 38, 0.4)'; }}
-          onMouseOut={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(220, 38, 38, 0.2)'; }}
-        >
-          <AlertTriangle size={18} strokeWidth={2.5} /> Delete Account
-        </button>
-      </section>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end', 
+        marginTop: '60px',
+        paddingTop: '20px',
+        borderTop: '1px solid var(--border)'
+      }}>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+            To update account click on <button type="button" onClick={() => setManageModalOpen(true)} style={{ background: 'none', border: 'none', color: 'var(--error)', textDecoration: 'underline', cursor: 'pointer', padding: 0, fontSize: '11px' }}>Manage Account</button>.
+          </span>
+        </div>
+      </div>
+
+      <HostModal
+        isOpen={manageModalOpen}
+        onClose={() => setManageModalOpen(false)}
+        title="Manage Account"
+      >
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+          <button 
+            type="button" 
+            onClick={() => setManageTab('password')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: manageTab === 'password' ? '600' : '400', color: manageTab === 'password' ? 'var(--primary)' : 'var(--text-secondary)' }}
+          >
+            Change Password
+          </button>
+          <button 
+            type="button" 
+            onClick={() => setManageTab('delete')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: manageTab === 'delete' ? '600' : '400', color: manageTab === 'delete' ? 'var(--error)' : 'var(--text-secondary)' }}
+          >
+            Delete Account
+          </button>
+        </div>
+
+        {manageTab === 'password' && (
+          <form onSubmit={handleChangePassword} autoComplete="off">
+            <div className="host-modal__field">
+              <label className="host-modal__label">Username (Email)</label>
+              <input type="email" className="host-modal__input" value={pwEmail} onChange={e => setPwEmail(e.target.value)} required autoComplete="off" />
+            </div>
+            <div className="host-modal__field">
+              <label className="host-modal__label">New Password</label>
+              <input type="password" className="host-modal__input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button type="submit" className="host-modal__btn host-modal__btn--primary">Update Password</button>
+            </div>
+          </form>
+        )}
+
+        {manageTab === 'delete' && (
+          <form onSubmit={handleDeleteSubmit} autoComplete="off">
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', padding: '12px', borderRadius: '4px', marginBottom: '16px' }}>
+              <span style={{ color: 'var(--error)', fontSize: '13px', fontWeight: '500' }}>Warning: This action cannot be undone. All your data will be permanently deleted.</span>
+            </div>
+            <div className="host-modal__field">
+              <label className="host-modal__label">Username (Email)</label>
+              <input type="email" className="host-modal__input" value={delEmail} onChange={e => setDelEmail(e.target.value)} required autoComplete="off" />
+            </div>
+            <div className="host-modal__field">
+              <label className="host-modal__label">Password</label>
+              <input type="password" className="host-modal__input" value={delPassword} onChange={e => setDelPassword(e.target.value)} required autoComplete="new-password" />
+            </div>
+            <div className="host-modal__field">
+              <label className="host-modal__label">To confirm, type "DELETE THIS ACCOUNT FOR ME"</label>
+              <input type="text" className="host-modal__input" value={delConfirm} onChange={e => setDelConfirm(e.target.value)} required autoComplete="off" />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button type="submit" className="host-modal__btn" style={{ 
+                background: '#991b1b', 
+                color: '#fff', 
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'background 0.2s',
+                cursor: 'pointer'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = '#7f1d1d'}
+              onMouseOut={(e) => e.currentTarget.style.background = '#991b1b'}
+              >
+                <AlertTriangle size={16} />
+                Permanently Delete Account
+              </button>
+            </div>
+          </form>
+        )}
+      </HostModal>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShieldCheck, Award, Calendar, Building2, Download, Share2, ExternalLink, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldCheck, Award, Calendar, Building2, Download, Share2, ExternalLink, Check, AlertCircle } from 'lucide-react';
+import LatticeLoader from '../components/LatticeLoader';
 import api from '../api/axios';
 
 export default function VerifyCertificate() {
@@ -52,8 +53,20 @@ export default function VerifyCertificate() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        <Loader2 className="spin" size={40} style={{ color: 'var(--primary)', marginBottom: '16px' }} />
-        <p style={{ color: 'var(--text-secondary)' }}>Verifying credential authenticity...</p>
+        <LatticeLoader
+          status="working"
+          label="Verifying credential authenticity"
+          pattern="orbit"
+          grid={3}
+          shape="round"
+          cellSize={7}
+          gap={2}
+          fontSize={15}
+          step={90}
+          idleOpacity={0.15}
+          showTimer
+          color="#f5f5f5"
+        />
       </div>
     );
   }
@@ -81,11 +94,11 @@ export default function VerifyCertificate() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)', padding: '40px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      
+
       {/* Top Navbar */}
       <header style={{ width: '100%', maxWidth: '780px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>C</div>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#6D011A', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>C</div>
           <span style={{ fontWeight: 800, fontSize: '18px', color: 'var(--text-primary)', letterSpacing: '1px' }}>CLUBORA</span>
         </Link>
         <span style={{ fontSize: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '4px 12px', borderRadius: '16px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -95,21 +108,21 @@ export default function VerifyCertificate() {
 
       {/* Main Verification Card */}
       <main style={{ width: '100%', maxWidth: '780px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-        
+
         {/* Verified Banner */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15), rgba(16, 185, 129, 0.1))', padding: '28px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: 'linear-gradient(135deg, rgba(109, 1, 26, 0.4), rgba(0, 0, 0, 0.7))', padding: '28px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Official Credential Verification</span>
             <h1 style={{ fontSize: '24px', fontWeight: 800, margin: '6px 0 0 0', color: 'var(--text-primary)' }}>Verified Achievement</h1>
           </div>
-          <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--primary)', color: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#6D011A', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Award size={32} />
           </div>
         </div>
 
         {/* Content Body */}
         <div style={{ padding: '36px 32px' }}>
-          
+
           {/* Recipient Details */}
           <div style={{ marginBottom: '28px' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Awarded To</span>

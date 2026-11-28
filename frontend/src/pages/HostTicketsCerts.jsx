@@ -4,6 +4,7 @@ import HostPageHeader from '../components/HostPageHeader';
 import HostSearchBar from '../components/HostSearchBar';
 import HostDataTable from '../components/HostDataTable';
 import HostPagination from '../components/HostPagination';
+import LatticeLoader from '../components/LatticeLoader';
 import { useToast } from '../context/ToastContext';
 import api from '../api/axios';
 
@@ -230,9 +231,9 @@ function HostTicketsCerts() {
                     fontSize: '11px',
                     fontWeight: 600,
                     borderRadius: '6px',
-                    border: '1px solid rgba(212, 175, 55, 0.4)',
-                    background: 'rgba(212, 175, 55, 0.08)',
-                    color: 'var(--primary)',
+                    border: '1px solid rgba(109, 1, 26, 0.6)',
+                    background: 'rgba(109, 1, 26, 0.25)',
+                    color: '#FFFFFF',
                     cursor: issuingCertId === ticket._id ? 'not-allowed' : 'pointer'
                   }}
                   title="Generate & Issue Certificate"
@@ -268,8 +269,27 @@ function HostTicketsCerts() {
               opacity: bulkIssuing ? 0.7 : 1,
             }}
           >
-            <Award size={18} />
-            {bulkIssuing ? 'Generating Certificates...' : 'Generate & Issue to All Attendees'}
+            {bulkIssuing ? (
+              <LatticeLoader
+                status="working"
+                label="Generating Certificates"
+                pattern="orbit"
+                grid={3}
+                shape="round"
+                cellSize={5}
+                gap={2}
+                fontSize={13}
+                step={90}
+                idleOpacity={0.15}
+                showTimer={false}
+                color="#f5f5f5"
+              />
+            ) : (
+              <>
+                <Award size={18} />
+                Generate & Issue to All Attendees
+              </>
+            )}
           </button>
         }
       />
@@ -294,7 +314,22 @@ function HostTicketsCerts() {
       </div>
 
       {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading tickets...</div>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
+          <LatticeLoader
+            status="working"
+            label="Loading tickets"
+            pattern="orbit"
+            grid={3}
+            shape="round"
+            cellSize={6}
+            gap={2}
+            fontSize={14}
+            step={90}
+            idleOpacity={0.15}
+            showTimer
+            color="#f5f5f5"
+          />
+        </div>
       ) : (
         <>
           <HostDataTable

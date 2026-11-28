@@ -1,20 +1,20 @@
 .form-builder {
-  background: var(--bg-primary);
+  background: #000000;
   border-radius: var(--radius-lg);
   padding: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .form-builder__predefined {
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .form-builder__badge-btn {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
+  background: #0A0A0A;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
   padding: 6px 12px;
   border-radius: 20px;
   font-size: 13px;
@@ -27,9 +27,9 @@
 }
 
 .form-builder__badge-btn:hover {
-  background: var(--brand-primary);
-  color: white;
-  border-color: var(--brand-primary);
+  background: #6D011A;
+  color: #FFFFFF;
+  border-color: #6D011A;
 }
 
 .form-builder__fields {
@@ -39,8 +39,8 @@
 }
 
 .form-builder__field-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
+  background: #0A0A0A;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md);
   padding: 16px;
   display: flex;
@@ -57,9 +57,9 @@
 }
 
 .form-builder__input {
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   outline: none;
@@ -68,13 +68,14 @@
 }
 
 .form-builder__input:focus {
-  border-color: var(--brand-primary);
+  border-color: #6D011A;
+  box-shadow: 0 0 0 3px rgba(109, 1, 26, 0.35);
 }
 
 .form-builder__select {
-  background: var(--bg-primary);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   outline: none;
@@ -85,7 +86,7 @@
 .form-builder__icon-btn {
   background: transparent;
   border: none;
-  color: var(--text-secondary);
+  color: #7E7E7E;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -96,12 +97,12 @@
 }
 
 .form-builder__icon-btn:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: #1A1A1A;
+  color: #FFFFFF;
 }
 
 .form-builder__icon-btn.text-error:hover {
-  color: var(--error);
+  color: var(--danger);
 }
 
 .form-builder__icon-btn:disabled {
@@ -119,9 +120,9 @@
 .form-builder__text-btn {
   background: transparent;
   border: none;
-  color: var(--brand-primary);
+  color: #FF4D6D;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -131,34 +132,36 @@
 }
 
 .form-builder__text-btn:hover {
+  color: #FFFFFF;
   text-decoration: underline;
 }
 
 .form-builder__preview-input {
   margin-top: 8px;
-  border-bottom: 1px dashed var(--border);
-  color: var(--text-tertiary);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.15);
+  color: #7E7E7E;
   padding-bottom: 4px;
   font-size: 14px;
 }
 
 .form-builder__add-btn {
-  background: var(--brand-primary);
-  color: white;
+  background: #6D011A;
+  color: #FFFFFF;
   border: none;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 20px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 14px rgba(109, 1, 26, 0.45);
   transition: all 0.2s;
 }
 
 .form-builder__add-btn:hover {
+  background: #8C0222;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 6px 20px rgba(109, 1, 26, 0.65);
 }
